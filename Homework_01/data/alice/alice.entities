@@ -1,0 +1,24 @@
+start_token	end_token	prop	cat	text
+1	5	PROP	PER	the Rabbit - Hole Alice
+15	15	PRON	PER	her
+15	16	NOM	PER	her sister
+31	31	PRON	PER	she
+37	37	PRON	PER	her
+37	38	NOM	PER	her sister
+64	64	PROP	PER	Alice
+73	73	PRON	PER	she
+77	77	PRON	PER	her
+84	84	PRON	PER	she
+92	92	PRON	PER	her
+133	133	PRON	PER	her
+140	140	PROP	PER	Alice
+149	150	NOM	LOC	the world
+151	151	PRON	PER	she
+181	181	PROP	PER	Alice
+190	190	PRON	PER	herself
+192	192	PRON	PER	she
+194	194	PRON	PER	herself
+210	210	PRON	PER	she
+216	216	PRON	PER	she
+222	222	PRON	PER	she
+228	228	PRON	PER	her
