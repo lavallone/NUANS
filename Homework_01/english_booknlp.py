@@ -283,7 +283,7 @@ class EnglishBookNLP:
 					entity_vals = self.entityTagger.tag(tokens, doEntities=self.doEntities)
 					entity_vals["entities"] = sorted(entity_vals["entities"]) # e' una lista di named entities rappresentate in questo modo --> (start_token, phraseEndToken, label, phrase)
 
-					with open(join(outFolder, "%s.tokens" % (idd)), "w", encoding="utf-8") as out:
+					with open(join(outFolder, "%s_tokens.tsv" % (idd)), "w", encoding="utf-8") as out:
 						out.write("%s\n" % '\t'.join(["paragraph_ID", "sentence_ID", "token_ID_within_sentence", "token_ID_within_document", "word", "lemma", "byte_onset", "byte_offset", "POS_tag", "fine_POS_tag", "dependency_relation", "syntactic_head_ID", "event"]))
 						for token in tokens:
 							out.write("%s\n" % token)
@@ -292,7 +292,7 @@ class EnglishBookNLP:
 					start_time=time.time()
 
 					entities = entity_vals["entities"]
-					with open(join(outFolder, "%s.entities" % (idd)), "w", encoding="utf-8") as out:
+					with open(join(outFolder, "%s_entities.tsv" % (idd)), "w", encoding="utf-8") as out:
 						out.write("start_token\tend_token\tprop\tcat\ttext\n")
 						for start, end, cat, text in entities:
 							ner_prop=cat.split("_")[0]

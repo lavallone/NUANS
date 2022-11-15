@@ -74,8 +74,8 @@ class Tagger(nn.Module): # modello che esegue le tasks
 
 		self.layered_dropout = nn.Dropout(0.20)
 
-		#self.supersense_lstm1 = nn.LSTM(modelSize + 20, hidden_dim, bidirectional=True, batch_first=True)
-		#self.supersense_hidden2tag1 = nn.Linear(hidden_dim * 2, self.num_supersense_labels)
+		self.supersense_lstm1 = nn.LSTM(modelSize + 20, hidden_dim, bidirectional=True, batch_first=True)
+		self.supersense_hidden2tag1 = nn.Linear(hidden_dim * 2, self.num_supersense_labels)
 
 		########################################################################################################
 		# LSTMs
