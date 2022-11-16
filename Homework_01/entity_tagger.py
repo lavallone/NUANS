@@ -24,66 +24,19 @@ class LitBankEntityTagger:
 		self.model.load_state_dict(torch.load(model_file, map_location=device)) # we load the pretrained weights
 		############################################################################################################################################################################
   
-		wnsFile = pkg_resources.resource_filename(__name__, "wordnet.first.sense") # non so a cosa possa servire
-		self.wns = self.read_wn(wnsFile)
+		#wnsFile = pkg_resources.resource_filename(__name__, "wordnet.first.sense") # non so a cosa possa servire
+		#self.wns = self.read_wn(wnsFile)
 
-	def read_wn(self, filename):
-		wns={}
-		with open(filename) as file:
-			for line in file:
-				cols=line.rstrip().split("\t")
-				word=cols[0]
-				pos=cols[1]
-				wn=int(cols[2].split(" ")[0])
-				wns["%s.%s" % (word, pos)]=wn
-		return wns
-
-	def get_wn(self, supersense_batched_sents):
-
-		wn_batches=[]
-
-		for idx, b_sent in enumerate(supersense_batched_sents):
-
-			max_len=0
-			for sent in b_sent:
-				if sent is not None:
-					if len(sent) > max_len:
-						max_len=len(sent)
-
-			wn_senses=[]
-
-			for sent in b_sent:
-
-				wn=[]
-				if sent is None:
-					continue
-
-				for word in sent:
-
-					if word is None:
-						wn.append(0)
-					else:
-
-						text=word.text
-						pos=word.pos
-						if pos == "NOUN":
-							pos="n"
-						elif pos == "VERB":
-							pos="v"
-						term=text.split(" ")[-1].lower()
-						key="%s.%s" % (term, pos)
-						if key in self.wns:
-							wn.append(self.wns[key])
-						else:
-							wn.append(1)
-
-				for val in range(len(sent), max_len):
-					wn.append(0)
-				wn_senses.append(wn)
-
-			wn_senses=torch.LongTensor(wn_senses)
-			wn_batches.append(wn_senses)
-		return wn_batches
+	# def read_wn(self, filename):
+	# 	wns={}
+	# 	with open(filename) as file:
+	# 		for line in file:
+	# 			cols=line.rstrip().split("\t")
+	# 			word=cols[0]
+	# 			pos=cols[1]
+	# 			wn=int(cols[2].split(" ")[0])
+	# 			wns["%s.%s" % (word, pos)]=wn
+	# 	return wns
 
 	def tag(self, toks, doEntities=True): # toks are the Tokens of the processed text
 
