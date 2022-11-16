@@ -10,7 +10,7 @@ from torch.nn import CrossEntropyLoss
 
 class Tagger(nn.Module): # the actual model which performs NER tagging
 
-	def __init__(self, freeze_bert=False, base_model=None, tagset=None, tagset_flat=None, hidden_dim=100, flat_hidden_dim=200, device=None):
+	def __init__(self, freeze_bert=False, base_model=None, tagset=None, tagset_flat=None, supersense_tagset=None, hidden_dim=100, flat_hidden_dim=200, device=None):
 		super(Tagger, self).__init__()
 
 		modelName=base_model
@@ -45,12 +45,12 @@ class Tagger(nn.Module): # the actual model which performs NER tagging
 
 		###########################################################################################################################
 		## supersense task components --> we keep these fields because the pretrained models have them (otherwise I'd delete them)
-		self.supersense_tagset = None
-		self.num_supersense_labels = None #len(supersense_tagset) + 2
-		self.supersense_crf = None #crf.CRF(len(supersense_tagset), device)
-		self.rev_supersense_tagset = None #{supersense_tagset[v]:v for v in supersense_tagset}
-		#self.rev_supersense_tagset[len(supersense_tagset)]="O"
-		#self.rev_supersense_tagset[len(supersense_tagset)+1]="O"
+		self.supersense_tagset = supersense_tagset
+		self.num_supersense_labels = len(supersense_tagset) + 2
+		self.supersense_crf = crf.CRF(len(supersense_tagset), device)
+		self.rev_supersense_tagset = {supersense_tagset[v]:v for v in supersense_tagset}
+		self.rev_supersense_tagset[len(supersense_tagset)]="O"
+		self.rev_supersense_tagset[len(supersense_tagset)+1]="O"
   
 		self.supersense_lstm1 = nn.LSTM(modelSize + 20, hidden_dim, bidirectional=True, batch_first=True)
 		self.supersense_hidden2tag1 = nn.Linear(hidden_dim * 2, self.num_supersense_labels)
