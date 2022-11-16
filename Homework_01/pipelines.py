@@ -1,5 +1,6 @@
 import re
 
+# da vedere dove viene utilizzato
 class Entity:
 	def __init__(self, start, end, entity_id=None, quote_id=None, quote_eid=None, proper=None, ner_cat=None, in_quote=None, text=None):
 		# print("creating")
@@ -19,7 +20,7 @@ class Entity:
 	def __str__(self):
 		return ("%s %s %s %s %s %s %s %s" % (self.global_start, self.global_end, self.entity_id, self.proper, self.ner_cat, self.in_quote, self.quote_eid, self.text))
 
-class Token:
+class Token: # used to represent a single Token
 	def __init__(self, paragraph_id, sentence_id, index_within_sentence_idx, token_id, text, pos, fine_pos, lemma, deprel, dephead, ner, startByte):
 		self.text=text
 		self.paragraph_id=paragraph_id
@@ -71,8 +72,6 @@ class Token:
 		# print(sents)
 		return sents
 
-
-
 from spacy.tokens import Doc
 
 class SpacyPipeline:
@@ -85,7 +84,6 @@ class SpacyPipeline:
 		text=re.sub("[\n\r]", "N", text)
 		text=re.sub("\t", "T", text)
 		return text
-		
 		
 	def tag_pretokenized(self, toks, sents, spaces):
 
@@ -100,7 +98,6 @@ class SpacyPipeline:
 
 	# how to tag sequences of texts
 	def tag(self, text):
-
 		doc = self.spacy_nlp(text)
 		return self.process_doc(doc)
 	def process_doc(self, doc):
@@ -110,7 +107,7 @@ class SpacyPipeline:
 		paragraph_id=0
 		current_whitespace=""
 		sentence_id=0
-		for sid, sent in enumerate(doc.sents):
+		for _, sent in enumerate(doc.sents):
 			skipped_in_sentence=0
 			skips_in_sentence=[]
 			curSkips=0
@@ -131,49 +128,10 @@ class SpacyPipeline:
 					hasWord=True
 					head_in_sentence=tok.head.i-sent.start
 					skips_between_token_and_head=skips_in_sentence[head_in_sentence]-skips_in_sentence[w_idx]
-					# i singoli Token fa parte di questa classe
+					# i singoli Token fanno parte di questa classe
 					token=Token(paragraph_id, sentence_id, w_idx-skipped_in_sentence, tok.i-skipped_global, self.filter_ws(tok.text), tok.pos_, tok.tag_, tok.lemma_, tok.dep_, tok.head.i-skipped_global-skips_between_token_and_head, None, tok.idx)
 					tokens.append(token)
 					current_whitespace=""
 			if hasWord:
 				sentence_id+=1
-		return tokens
-
-class StanzaPipeline:
-	def __init__(self, nlp):
-		self.nlp=nlp
-
-
-	def filter_ws(self, text):
-		text=re.sub(" ", "S", text)
-		text=re.sub("[\n\r]", "N", text)
-		text=re.sub("\t", "T", text)
-		return text
-		
-		
-	def tag(self, text):
-#	def __init__(self, sentence_id, index_within_sentence_idx, token_id, text, pos, lemma, deprel, dephead, ner, startByte, spacyToken):
-
-		text=re.sub("\s+", " ", text)
-		doc = self.nlp(text)
-		tokens=[]
-		tid=0
-		cur=0
-		for sid, sent in enumerate(doc.sentences):
-			for w_idx, tok in enumerate(sent.words):
-				feats=tok.misc.split("|")
-				start_char=-1
-				for f in feats:
-					parts=f.split("=")
-					if parts[0] == "start_char":
-						start_char=int(parts[1])
-
-# paragraph_id, sentence_id, index_within_sentence_idx, token_id, text, pos, lemma, deprel, dephead, ner, startByte						
-				# need to add paragraph ID in stanza here!!
-				paragraph_id=-1
-				token=Token(paragraph_id, sid, w_idx, tid, self.filter_ws(tok.text), tok.upos, tok.pos, tok.lemma, tok.deprel, cur+tok.head-1, None, start_char)
-				tokens.append(token)
-				tid+=1
-			cur+=len(sent.words)
-
 		return tokens

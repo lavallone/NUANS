@@ -1,6 +1,4 @@
-import sys
 import spacy
-import copy
 from pipelines import SpacyPipeline
 from entity_tagger import LitBankEntityTagger
 #from booknlp.english.gender_inference_model_1 import GenderEM
@@ -8,7 +6,6 @@ from os.path import join
 import os
 import json
 from collections import Counter
-from html import escape
 import time
 from pathlib import Path
 import urllib.request 
@@ -20,7 +17,6 @@ class BookNLP:
 	def __init__(self, model_params):
 
 		with torch.no_grad():
-
 			start_time = time.time()
 			print(model_params)
    
@@ -69,15 +65,16 @@ class BookNLP:
 				if pipe == "entity":
 					self.doEntities=True
 
-			tagsetPath="entity_cat.tagset" # questo sara' da modificare per farlo funzionare con solo {PER,LOC,ORG}
+			tagsetPath="LitBank_entity_categories.txt" # questo sara' da modificare per farlo funzionare con solo {PER,LOC,ORG}
 			tagsetPath = pkg_resources.resource_filename(__name__, tagsetPath)
 
 			if self.doEntities:
 				self.entityTagger = LitBankEntityTagger(self.entityPath, tagsetPath)
 
-			self.tagger = SpacyPipeline(spacy_nlp)
+			self.tagger = SpacyPipeline(spacy_nlp) # we exploit the capabilities of spacy
 			print("--- startup: %.3f seconds ---" % (time.time() - start_time))
 
+	# da vedere se cancellare la funzione
 	def get_syntax(self, tokens, entities, assignments, genders):
 
 		def check_conj(tok, tokens):
@@ -252,7 +249,7 @@ class BookNLP:
 			originalTime=start_time
 
 			with open(filename) as file:
-				data=file.read() # i dati da leggere
+				data = file.read() # single story to process
 				if len(data) == 0:
 					print("Input file is empty: %s" % filename)
 					return 
@@ -261,7 +258,7 @@ class BookNLP:
 				except FileExistsError:
 					pass
 					
-				tokens=self.tagger.tag(data) # usiamo il tagger di spacy --> ritorna una lista di tokens della classe 'pipelines.Token'
+				tokens = self.tagger.tag(data) # usiamo il tagger di spacy --> ritorna una lista di tokens della classe 'pipelines.Token'
 
 				print("--- spacy: %.3f seconds ---" % (time.time() - start_time))
 				start_time=time.time()
