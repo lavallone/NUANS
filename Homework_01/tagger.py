@@ -47,7 +47,7 @@ class Tagger(nn.Module): # modello che esegue le tasks
 
 		###############################################################################################################
 		## we keep these fields for the compatibility with the prtrained models but we don't need it for the NER task!
-  		self.supersense_tagset = None
+		self.supersense_tagset = None
 		self.num_supersense_labels = len(supersense_tagset) + 2
 		self.supersense_crf = crf.CRF(len(supersense_tagset), device)
 		self.rev_supersense_tagset = {supersense_tagset[v]:v for v in supersense_tagset}
