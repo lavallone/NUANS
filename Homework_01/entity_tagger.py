@@ -2,26 +2,28 @@ from tagger import Tagger
 import torch
 import re
 import layered_reader as layered_reader
-import sequence_layered_reader as sequence_layered_reader
+from utilities import sequence_layered_reader
 import pkg_resources
 
 class LitBankEntityTagger:
 	def __init__(self, model_file, model_tagset):
 
 		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-		self.tagset=sequence_layered_reader.read_tagset(model_tagset) # fa una semplice lettura dei possibili tag per eseguire la NER
+		self.tagset = sequence_layered_reader.read_tagset(model_tagset) # fa una semplice lettura dei possibili tag per eseguire la NER
 		
+  		# the model also tags 
 		supersenseTagset = pkg_resources.resource_filename(__name__, "supersense.tagset")
 		self.supersense_tagset=sequence_layered_reader.read_tagset(supersenseTagset)
 
+		############################################################################################################################################################################
+		## WE LOAD THE ACTUAL MODEL WHICH PERFORMS NER TAGGING
 		base_model=re.sub("google_bert", "google/bert", model_file.split("/")[-1])
 		base_model=re.sub(".model", "", base_model)
-
 		self.model = Tagger(freeze_bert=False, base_model=base_model, tagset_flat={"EVENT":1, "O":1}, supersense_tagset=self.supersense_tagset, tagset=self.tagset, device=device)
-
 		self.model.to(device)
-		self.model.load_state_dict(torch.load(model_file, map_location=device))
-
+		self.model.load_state_dict(torch.load(model_file, map_location=device)) # we load the pretrained weights
+		############################################################################################################################################################################
+  
 		wnsFile = pkg_resources.resource_filename(__name__, "wordnet.first.sense") # non so a cosa possa servire
 		self.wns = self.read_wn(wnsFile)
 

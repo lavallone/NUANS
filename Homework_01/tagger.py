@@ -45,13 +45,15 @@ class Tagger(nn.Module): # modello che esegue le tasks
 
 		self.num_labels=len(tagset) + 2
 
-		self.supersense_tagset=supersense_tagset
-		self.num_supersense_labels=len(supersense_tagset) + 2
-		self.supersense_crf=crf.CRF(len(supersense_tagset), device) # il CRF lo utilizziamo per il supersense task!
-		
-		self.rev_supersense_tagset={supersense_tagset[v]:v for v in supersense_tagset}
+		###############################################################################################################
+		## we keep these fields for the compatibility with the prtrained models but we don't need it for the NER task!
+  		self.supersense_tagset = None
+		self.num_supersense_labels = len(supersense_tagset) + 2
+		self.supersense_crf = crf.CRF(len(supersense_tagset), device)
+		self.rev_supersense_tagset = {supersense_tagset[v]:v for v in supersense_tagset}
 		self.rev_supersense_tagset[len(supersense_tagset)]="O"
 		self.rev_supersense_tagset[len(supersense_tagset)+1]="O"
+  		###############################################################################################################
 
 		self.num_labels_flat=len(tagset_flat)
 
@@ -61,12 +63,11 @@ class Tagger(nn.Module): # modello che esegue le tasks
 		self.bert = BertModel.from_pretrained(modelName)
 		########################################################################################################
 
-		self.tokenizer.add_tokens(["[CAP]"], special_tokens=True) # da capire cosa è
+		self.tokenizer.add_tokens(["[CAP]"], special_tokens=True) # we need it because we use pretrained UNCASED BERT models!
 		self.bert.resize_token_embeddings(len(self.tokenizer))
-
 		self.bert.eval()
 		
-		if freeze_bert: # qui da capire quali layers freezare e quali no per il fine tuning
+		if freeze_bert: # we'll use the model as it is!
 			for param in self.bert.parameters():
 				param.requires_grad = False
 
@@ -78,7 +79,7 @@ class Tagger(nn.Module): # modello che esegue le tasks
 		self.supersense_hidden2tag1 = nn.Linear(hidden_dim * 2, self.num_supersense_labels)
 
 		########################################################################################################
-		# LSTMs
+		# 3 LSTMs needed for predicting NESTED entities
 		self.lstm1 = nn.LSTM(modelSize, hidden_dim, bidirectional=True, batch_first=True)
 		self.hidden2tag1 = nn.Linear(hidden_dim * 2, self.num_labels)
 

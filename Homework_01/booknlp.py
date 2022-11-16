@@ -69,9 +69,9 @@ class BookNLP:
 			tagsetPath = pkg_resources.resource_filename(__name__, tagsetPath)
 
 			if self.doEntities:
-				self.entityTagger = LitBankEntityTagger(self.entityPath, tagsetPath)
+				self.entityTagger = LitBankEntityTagger(self.entityPath, tagsetPath) # WRAPPER of the model which performs NER tag
 
-			self.tagger = SpacyPipeline(spacy_nlp) # we exploit the capabilities of spacy
+			self.tagger = SpacyPipeline(spacy_nlp) # we exploit the capabilities of Spacy
 			print("--- startup: %.3f seconds ---" % (time.time() - start_time))
 
 	# da vedere se cancellare la funzione
@@ -258,15 +258,17 @@ class BookNLP:
 				except FileExistsError:
 					pass
 					
-				tokens = self.tagger.tag(data) # usiamo il tagger di spacy --> ritorna una lista di tokens della classe 'pipelines.Token'
+				tokens = self.tagger.tag(data) # it returns a list of tokens of the class 'pipelines.Token' --> which have already some informations attached (like POS tag) thanks to Spacy
 
 				print("--- spacy: %.3f seconds ---" % (time.time() - start_time))
-				start_time=time.time()
+				start_time = time.time()
 
 				if self.doEntities:
+					# we give the processed tokens by Spacy to the model for tagging them
 					entity_vals = self.entityTagger.tag(tokens, doEntities=self.doEntities)
 					entity_vals["entities"] = sorted(entity_vals["entities"]) # e' una lista di named entities rappresentate in questo modo --> (start_token, phraseEndToken, label, phrase)
 
+					# invece di file ho intenzione di creare dei json files
 					with open(join(outFolder, "%s_tokens.tsv" % (idd)), "w", encoding="utf-8") as out:
 						out.write("%s\n" % '\t'.join(["paragraph_ID", "sentence_ID", "token_ID_within_sentence", "token_ID_within_document", "word", "lemma", "byte_onset", "byte_offset", "POS_tag", "fine_POS_tag", "dependency_relation", "syntactic_head_ID", "event"]))
 						for token in tokens:
