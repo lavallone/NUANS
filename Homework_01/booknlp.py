@@ -1,7 +1,6 @@
 import spacy
-from pipelines import SpacyPipeline
+from utilities import spacy
 from entity_tagger import LitBankEntityTagger
-#from booknlp.english.gender_inference_model_1 import GenderEM
 from os.path import join
 import os
 import json
@@ -25,12 +24,7 @@ class BookNLP:
 
 			spacy_nlp = spacy.load(spacy_model, disable=["ner"]) # we disable the ner task for spacy!
 
-			valid_keys=set("entity,event,supersense,quote,coref".split(","))
 			pipes=model_params["pipeline"].split(",") # it'll always be pipes="entity"
-
-			#self.gender_cats= [ ["he", "him", "his"], ["she", "her"], ["they", "them", "their"], ["xe", "xem", "xyr", "xir"], ["ze", "zem", "zir", "hir"] ] 
-			#if "referential_gender_cats" in model_params:
-			#	self.gender_cats=model_params["referential_gender_cats"]
 
 			###########################################################################################################################
 			## MODEL loading part
@@ -77,7 +71,7 @@ class BookNLP:
 			if self.doEntities:
 				self.entityTagger = LitBankEntityTagger(self.entityPath, tagsetPath) # WRAPPER of the model which performs NER tag
 
-			self.tagger = SpacyPipeline(spacy_nlp) # we exploit the capabilities of Spacy
+			self.tagger = spacy.SpacyPipeline(spacy_nlp) # we exploit the capabilities of Spacy
 			print("--- startup: %.3f seconds ---" % (time.time() - start_time))
 
 	# da vedere se cancellare la funzione
