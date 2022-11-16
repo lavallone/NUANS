@@ -1,4 +1,4 @@
-from tagger import Tagger
+from tagger import NER_Model
 import torch
 import re
 from utilities import layered_reader
@@ -19,7 +19,7 @@ class LitBankEntityTagger:
 		## WE LOAD THE ACTUAL MODEL WHICH PERFORMS NER TAGGING
 		base_model=re.sub("google_bert", "google/bert", model_file.split("/")[-1])
 		base_model=re.sub(".model", "", base_model)
-		self.model = Tagger(freeze_bert=False, base_model=base_model, tagset_flat={"EVENT":1, "O":1}, supersense_tagset=self.supersense_tagset, tagset=self.tagset, device=device)
+		self.model = NER_Model(freeze_bert=False, base_model=base_model, tagset_flat={"EVENT":1, "O":1}, supersense_tagset=self.supersense_tagset, tagset=self.tagset, device=device)
 		self.model.to(device)
 		self.model.load_state_dict(torch.load(model_file, map_location=device)) # we load the pretrained weights
 		############################################################################################################################################################################

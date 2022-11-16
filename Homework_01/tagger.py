@@ -8,10 +8,10 @@ from utilities import crf
 from torch.nn import CrossEntropyLoss
 #import booknlp.common.sequence_eval as sequence_eval
 
-class Tagger(nn.Module): # the actual model which performs NER tagging
+class NER_Model(nn.Module): # the actual model which performs NER tagging
 
 	def __init__(self, freeze_bert=False, base_model=None, tagset=None, tagset_flat=None, supersense_tagset=None, hidden_dim=100, flat_hidden_dim=200, device=None):
-		super(Tagger, self).__init__()
+		super(NER_Model, self).__init__()
 
 		modelName=base_model
 		modelName=re.sub("^entities_", "", modelName)
