@@ -10,7 +10,7 @@ from torch.nn import CrossEntropyLoss
 
 class Tagger(nn.Module): # the actual model which performs NER tagging
 
-	def __init__(self, freeze_bert=False, base_model=None, tagset=None, supersense_tagset=None, tagset_flat=None, hidden_dim=100, flat_hidden_dim=200, device=None):
+	def __init__(self, freeze_bert=False, base_model=None, tagset=None, tagset_flat=None, hidden_dim=100, flat_hidden_dim=200, device=None):
 		super(Tagger, self).__init__()
 
 		modelName=base_model
