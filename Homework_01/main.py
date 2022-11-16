@@ -21,6 +21,5 @@ if __name__ == "__main__":
 	print("tagging %s" % inputFile)
 
 	model_params={"pipeline":"entity", "model":"big",} # we exploit only the named entity tagger of the BookNLP pipeline!
-
- 	booknlp = BookNLP(model_params)
+	booknlp = BookNLP(model_params)
 	booknlp.process(inputFile, outputFolder, idd)
