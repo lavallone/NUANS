@@ -95,69 +95,69 @@ class Tagger(nn.Module): # the actual model which performs NER tagging
 		self.bert_params={}
 		self.everything_else_params={}
 
-	def forward(self, input_ids, matrix1, matrix2, attention_mask=None, transforms=None, labels=None, lens=None):
+	# def forward(self, input_ids, matrix1, matrix2, attention_mask=None, transforms=None, labels=None, lens=None):
 		
-		matrix1=matrix1.to(self.device)
-		matrix2=matrix2.to(self.device)
+	# 	matrix1=matrix1.to(self.device)
+	# 	matrix2=matrix2.to(self.device)
 		
-		input_ids = input_ids.to(self.device)
-		attention_mask = attention_mask.to(self.device)
-		transforms = transforms.to(self.device)
+	# 	input_ids = input_ids.to(self.device)
+	# 	attention_mask = attention_mask.to(self.device)
+	# 	transforms = transforms.to(self.device)
 
-		if lens is not None:
-			lens[0] = lens[0].to(self.device)
-			lens[1] = lens[1].to(self.device)
-			lens[2] = lens[2].to(self.device)
+	# 	if lens is not None:
+	# 		lens[0] = lens[0].to(self.device)
+	# 		lens[1] = lens[1].to(self.device)
+	# 		lens[2] = lens[2].to(self.device)
 
-		if labels is not None:
-			labels[0] = labels[0].to(self.device)
-			labels[1] = labels[1].to(self.device)
-			labels[2] = labels[2].to(self.device)
+	# 	if labels is not None:
+	# 		labels[0] = labels[0].to(self.device)
+	# 		labels[1] = labels[1].to(self.device)
+	# 		labels[2] = labels[2].to(self.device)
 		
-		output = self.bert(input_ids, token_type_ids=None, attention_mask=attention_mask, output_hidden_states=True)
-		hidden_states=output["hidden_states"]
-		if self.num_layers == 4:
-			all_layers = torch.cat((hidden_states[-1], hidden_states[-2], hidden_states[-3], hidden_states[-4]), 2)
-		elif self.num_layers == 2:
-			all_layers = torch.cat((hidden_states[-1], hidden_states[-2]), 2)
+	# 	output = self.bert(input_ids, token_type_ids=None, attention_mask=attention_mask, output_hidden_states=True)
+	# 	hidden_states=output["hidden_states"]
+	# 	if self.num_layers == 4:
+	# 		all_layers = torch.cat((hidden_states[-1], hidden_states[-2], hidden_states[-3], hidden_states[-4]), 2)
+	# 	elif self.num_layers == 2:
+	# 		all_layers = torch.cat((hidden_states[-1], hidden_states[-2]), 2)
 
-		# remove the opening [CLS]
-		reduced=torch.matmul(transforms,all_layers)[:,1:,:]
+	# 	# remove the opening [CLS]
+	# 	reduced=torch.matmul(transforms,all_layers)[:,1:,:]
 
-		reduced=self.layered_dropout(reduced)
+	# 	reduced=self.layered_dropout(reduced)
 
-		lstm_out1, _ = self.lstm1(reduced)
-		tag_space1 = self.hidden2tag1(lstm_out1)
+	# 	lstm_out1, _ = self.lstm1(reduced)
+	# 	tag_space1 = self.hidden2tag1(lstm_out1)
 
-		input2=torch.matmul(matrix1[:,1:,1:],lstm_out1)
+	# 	input2=torch.matmul(matrix1[:,1:,1:],lstm_out1)
 
-		input2=self.layered_dropout(input2)
+	# 	input2=self.layered_dropout(input2)
 
-		lstm_out2, _ = self.lstm2(input2)
-		tag_space2 = self.hidden2tag2(lstm_out2)
+	# 	lstm_out2, _ = self.lstm2(input2)
+	# 	tag_space2 = self.hidden2tag2(lstm_out2)
 		
-		input3=torch.matmul(matrix2[:,1:,1:],lstm_out2)
+	# 	input3=torch.matmul(matrix2[:,1:,1:],lstm_out2)
 
-		input3=self.layered_dropout(input3)
+	# 	input3=self.layered_dropout(input3)
 		
-		lstm_out3, _ = self.lstm3(input3)
-		tag_space3 = self.hidden2tag3(lstm_out3)	
+	# 	lstm_out3, _ = self.lstm3(input3)
+	# 	tag_space3 = self.hidden2tag3(lstm_out3)	
 
-		to_value=0
+	# 	to_value=0
 
-		forward_score1 = self.crf.forward(tag_space1, lens[0]-2)
-		sequence_score1 = self.crf.score(torch.where(labels[0][:,1:] == -100, torch.ones_like(labels[0][:,1:]) * to_value, labels[0][:,1:]), lens[0]-2, logits=tag_space1)
-		loss1 = (forward_score1 - sequence_score1).sum()
+	# 	forward_score1 = self.crf.forward(tag_space1, lens[0]-2)
+	# 	sequence_score1 = self.crf.score(torch.where(labels[0][:,1:] == -100, torch.ones_like(labels[0][:,1:]) * to_value, labels[0][:,1:]), lens[0]-2, logits=tag_space1)
+	# 	loss1 = (forward_score1 - sequence_score1).sum()
 
-		forward_score2 = self.crf.forward(tag_space2, lens[1]-2)
-		sequence_score2 = self.crf.score(torch.where(labels[1][:,1:] == -100, torch.ones_like(labels[1][:,1:]) * to_value, labels[1][:,1:]), lens[1]-2, logits=tag_space2)
-		loss2 = (forward_score2 - sequence_score2).sum()
+	# 	forward_score2 = self.crf.forward(tag_space2, lens[1]-2)
+	# 	sequence_score2 = self.crf.score(torch.where(labels[1][:,1:] == -100, torch.ones_like(labels[1][:,1:]) * to_value, labels[1][:,1:]), lens[1]-2, logits=tag_space2)
+	# 	loss2 = (forward_score2 - sequence_score2).sum()
 
-		forward_score3 = self.crf.forward(tag_space3, lens[2]-2)
-		sequence_score3 = self.crf.score(torch.where(labels[2][:,1:] == -100, torch.ones_like(labels[2][:,1:]) * to_value, labels[2][:,1:]), lens[2]-2, logits=tag_space3)
-		loss3 = (forward_score3 - sequence_score3).sum()
+	# 	forward_score3 = self.crf.forward(tag_space3, lens[2]-2)
+	# 	sequence_score3 = self.crf.score(torch.where(labels[2][:,1:] == -100, torch.ones_like(labels[2][:,1:]) * to_value, labels[2][:,1:]), lens[2]-2, logits=tag_space3)
+	# 	loss3 = (forward_score3 - sequence_score3).sum()
 
-		return loss1 + loss2 + loss3
+	# 	return loss1 + loss2 + loss3
 
 	def predict_all(self, input_ids, attention_mask=None, transforms=None, lens=None, doEntities=True):
 
@@ -352,6 +352,7 @@ class Tagger(nn.Module): # the actual model which performs NER tagging
 
 		return preds_in_order
 
+	# utility functions
 	def get_spans(self, rev_tagset, doc_idx, tags, length, sentence):
 		
 		# remove the opening [CLS] and closing [SEP]
