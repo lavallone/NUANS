@@ -22,9 +22,8 @@ class EnglishBookNLP:
 		with torch.no_grad():
 
 			start_time = time.time()
-
 			print(model_params)
-
+   
 			# se vogliamo usare spacy
 			spacy_model="en_core_web_sm" # lo utilizziamo per fare  il pos tagging e il dependency tree
 			if "spacy_model" in model_params:
@@ -47,14 +46,21 @@ class EnglishBookNLP:
 			if not Path(modelPath).is_dir(): # in caso mi creo la cartella "booknlp_models"
 				Path(modelPath).mkdir(parents=True, exist_ok=True)
 
-			if model_params["model"] == "big": # se voglio il modello grande
+			if model_params["model"] == "big": # se voglio il modello grande (297 M)
 				entityName="entities_google_bert_uncased_L-6_H-768_A-12-v1.0.model"
 				self.entityPath=os.path.join(modelPath, entityName)
 				if not Path(self.entityPath).is_file():
 					print("downloading %s" % entityName)
 					urllib.request.urlretrieve("http://ischool.berkeley.edu/~dbamman/booknlp_models/%s" % entityName, self.entityPath)
 
-			elif model_params["model"] == "small": # se voglio il modello piccolo
+			elif model_params["model"] == "medium": # se voglio il modello medio (137 M)
+				entityName="entities_google_bert_uncased_L-4_H-512_A-8.model"
+				self.entityPath=os.path.join(modelPath, entityName)
+				if not Path(self.entityPath).is_file():
+					print("downloading %s" % entityName)
+					urllib.request.urlretrieve("http://ischool.berkeley.edu/~dbamman/booknlp_models/%s" % entityName, self.entityPath)
+
+			elif model_params["model"] == "small": # se voglio il modello piccolo (57 M)
 				entityName="entities_google_bert_uncased_L-4_H-256_A-4-v1.0.model"
 				self.entityPath=os.path.join(modelPath, entityName)
 				if not Path(self.entityPath).is_file():
