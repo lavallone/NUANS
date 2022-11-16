@@ -1,5 +1,5 @@
 import spacy
-from utilities import spacy
+from utilities import spacy_tokenizer
 from entity_tagger import LitBankEntityTagger
 from os.path import join
 import os
@@ -71,7 +71,7 @@ class BookNLP:
 			if self.doEntities:
 				self.entityTagger = LitBankEntityTagger(self.entityPath, tagsetPath) # WRAPPER of the model which performs NER tag
 
-			self.tagger = spacy.SpacyPipeline(spacy_nlp) # we exploit the capabilities of Spacy
+			self.tagger = spacy_tokenizer.SpacyPipeline(spacy_nlp) # we exploit the capabilities of Spacy
 			print("--- startup: %.3f seconds ---" % (time.time() - start_time))
 
 	# da vedere se cancellare la funzione
