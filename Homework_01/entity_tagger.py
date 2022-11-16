@@ -1,7 +1,7 @@
 from tagger import Tagger
 import torch
 import re
-import layered_reader as layered_reader
+from utilities import layered_reader
 from utilities import sequence_layered_reader
 import pkg_resources
 

@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 import numpy as np
-import crf as crf
+from utilities import crf
 #import booknlp.common.sequence_eval as sequence_eval
 from torch.nn import CrossEntropyLoss
 
