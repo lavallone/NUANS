@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
 	print("tagging %s" % inputFile)
 
-	model_params={"pipeline":"entity", "model":"medium",}
+	model_params={"pipeline":"entity", "model":"big",}
 
 	booknlp=BookNLP(model_params)
 	booknlp.process(inputFile, outputFolder, idd)
