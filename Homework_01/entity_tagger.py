@@ -23,20 +23,6 @@ class LitBankEntityTagger:
 		self.model.to(device)
 		self.model.load_state_dict(torch.load(model_file, map_location=device)) # we load the pretrained weights
 		############################################################################################################################################################################
-  
-		#wnsFile = pkg_resources.resource_filename(__name__, "wordnet.first.sense") # non so a cosa possa servire
-		#self.wns = self.read_wn(wnsFile)
-
-	# def read_wn(self, filename):
-	# 	wns={}
-	# 	with open(filename) as file:
-	# 		for line in file:
-	# 			cols=line.rstrip().split("\t")
-	# 			word=cols[0]
-	# 			pos=cols[1]
-	# 			wn=int(cols[2].split(" ")[0])
-	# 			wns["%s.%s" % (word, pos)]=wn
-	# 	return wns
 
 	def tag(self, toks, doEntities=True): # toks are the Tokens of the processed text
 

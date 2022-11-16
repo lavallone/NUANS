@@ -36,15 +36,16 @@ class Tagger(nn.Module): # the actual model which performs NER tagging
 
 		self.wn_embedding = nn.Embedding(50, 20)
 
+		# "revised tagset"
 		self.rev_tagset={tagset[v]:v for v in tagset}
-		self.rev_tagset[len(tagset)] = "O" # questa cosa non l'ho capita
+		self.rev_tagset[len(tagset)] = "O"
 		self.rev_tagset[len(tagset)+1] = "O"
 
 		self.num_labels=len(tagset) + 2
 
-		###############################################################################################################
-		## supersense task that could be exploited for NER tagging the 'FAIRY TALES and SHORT STORIES' dataset
-		self.supersense_tagset = supersense_tagset
+		###########################################################################################################################
+		## supersense task components --> we keep these fields because the pretrained models have them (otherwise I'd delete them)
+		self.supersense_tagset = None
 		self.num_supersense_labels = len(supersense_tagset) + 2
 		self.supersense_crf = crf.CRF(len(supersense_tagset), device)
 		self.rev_supersense_tagset = {supersense_tagset[v]:v for v in supersense_tagset}
@@ -53,10 +54,8 @@ class Tagger(nn.Module): # the actual model which performs NER tagging
   
 		self.supersense_lstm1 = nn.LSTM(modelSize + 20, hidden_dim, bidirectional=True, batch_first=True)
 		self.supersense_hidden2tag1 = nn.Linear(hidden_dim * 2, self.num_supersense_labels)
-  		###############################################################################################################
-
-		self.num_labels_flat=len(tagset_flat)
-
+		###########################################################################################################################
+  
 		########################################################################################################
 		# BERT
 		self.tokenizer = BertTokenizer.from_pretrained(modelName, do_lower_case=False, do_basic_tokenize=False)
@@ -70,7 +69,6 @@ class Tagger(nn.Module): # the actual model which performs NER tagging
 		########################################################################################################
 
 		self.hidden_dim = hidden_dim
-
 		self.layered_dropout = nn.Dropout(0.20)
 
 		########################################################################################################
@@ -85,15 +83,12 @@ class Tagger(nn.Module): # the actual model which performs NER tagging
 		self.hidden2tag3 = nn.Linear(hidden_dim * 2, self.num_labels)
 		########################################################################################################
 
+		# we don't need these components for NER tagging
+		self.num_labels_flat=len(tagset_flat)
 		self.flat_dropout = nn.Dropout(0.5)
-
 		self.flat_hidden_dim=flat_hidden_dim
 		self.flat_lstm = nn.LSTM(modelSize, self.flat_hidden_dim, bidirectional=True, batch_first=True, num_layers=1)
-
 		self.flat_classifier = nn.Linear(2*self.flat_hidden_dim, self.num_labels_flat)
-
-		self.bert_params={}
-		self.everything_else_params={}
 
 	# the usual forward function of 'nn.Module' --> but in our case we never use it!
 	def forward(self, input_ids, matrix1, matrix2, attention_mask=None, transforms=None, labels=None, lens=None):
