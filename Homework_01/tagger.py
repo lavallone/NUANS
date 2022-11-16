@@ -95,44 +95,6 @@ class Tagger(nn.Module): # the actual model which performs NER tagging
 		self.bert_params={}
 		self.everything_else_params={}
 
-	def forwardFlatSequence(self, input_ids, token_type_ids=None, attention_mask=None, transforms=None, labels=None):
-
-		batch_s, max_len=input_ids.shape
-
-		input_ids = input_ids.to(self.device)
-		attention_mask = attention_mask.to(self.device)
-		transforms = transforms.to(self.device)
-
-		if labels is not None:
-			labels = labels.to(self.device)
-
-		output = self.bert(input_ids, token_type_ids=None, attention_mask=attention_mask, output_hidden_states=True)
-		hidden_states=output["hidden_states"]
-	
-		if self.num_layers == 4:
-			all_layers = torch.cat((hidden_states[-1], hidden_states[-2], hidden_states[-3], hidden_states[-4]), 2)
-		elif self.num_layers == 2:
-			all_layers = torch.cat((hidden_states[-1], hidden_states[-2]), 2)
-
-		out=torch.matmul(transforms,all_layers)
-
-		out, _ = self.flat_lstm(out)
-
-		out=self.flat_dropout(out)
-		
-		out = out.contiguous().view(-1,out.shape[2])
-
-		logits = self.flat_classifier(out)
-
-		if labels is not None:
-
-			loss_fct = CrossEntropyLoss(ignore_index=-100)
-			loss = loss_fct(logits.view(-1, self.num_labels_flat), labels.view(-1))
-			return loss
-
-		else:
-			return logits
-
 	def forward(self, input_ids, matrix1, matrix2, attention_mask=None, transforms=None, labels=None, lens=None):
 		
 		matrix1=matrix1.to(self.device)
@@ -358,7 +320,7 @@ class Tagger(nn.Module): # the actual model which performs NER tagging
 		return all_tags1, all_tags2, all_tags3
 
 
-	def predict(self, input_ids, attention_mask=None, transforms=None, lens=None):
+
 
 		def fix(sequence):
 
