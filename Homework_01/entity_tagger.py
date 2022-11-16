@@ -12,7 +12,7 @@ class LitBankEntityTagger:
 		self.tagset = sequence_layered_reader.read_tagset(model_tagset) # fa una semplice lettura dei possibili tag per eseguire la NER
 		
   		# the model also tags token with supersense tags --> a more informative version of NER tags, but we won't use them!
-		supersenseTagset = pkg_resources.resource_filename(__name__, "supersense.tagset")
+		supersenseTagset = pkg_resources.resource_filename(__name__, "labels/supersense_categories.txt")
 		self.supersense_tagset=sequence_layered_reader.read_tagset(supersenseTagset)
 
 		############################################################################################################################################################################

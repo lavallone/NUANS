@@ -65,7 +65,7 @@ class BookNLP:
 				if pipe == "entity":
 					self.doEntities=True
 
-			tagsetPath="LitBank_entity_categories.txt" # questo sara' da modificare per farlo funzionare con solo {PER,LOC,ORG}
+			tagsetPath="labels/LitBank_entity_categories.txt" # questo sara' da modificare per farlo funzionare con solo {PER,LOC,ORG}
 			tagsetPath = pkg_resources.resource_filename(__name__, tagsetPath)
 
 			if self.doEntities:
