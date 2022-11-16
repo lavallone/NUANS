@@ -46,11 +46,11 @@ class Tagger(nn.Module): # the actual model which performs NER tagging
 		###########################################################################################################################
 		## supersense task components --> we keep these fields because the pretrained models have them (otherwise I'd delete them)
 		self.supersense_tagset = None
-		self.num_supersense_labels = len(supersense_tagset) + 2
-		self.supersense_crf = crf.CRF(len(supersense_tagset), device)
-		self.rev_supersense_tagset = {supersense_tagset[v]:v for v in supersense_tagset}
-		self.rev_supersense_tagset[len(supersense_tagset)]="O"
-		self.rev_supersense_tagset[len(supersense_tagset)+1]="O"
+		self.num_supersense_labels = len(self.supersense_tagset) + 2
+		self.supersense_crf = crf.CRF(len(self.supersense_tagset), device)
+		self.rev_supersense_tagset = {self.supersense_tagset[v]:v for v in self.supersense_tagset}
+		self.rev_supersense_tagset[len(self.supersense_tagset)]="O"
+		self.rev_supersense_tagset[len(self.supersense_tagset)+1]="O"
   
 		self.supersense_lstm1 = nn.LSTM(modelSize + 20, hidden_dim, bidirectional=True, batch_first=True)
 		self.supersense_hidden2tag1 = nn.Linear(hidden_dim * 2, self.num_supersense_labels)
