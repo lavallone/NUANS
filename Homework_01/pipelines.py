@@ -1,24 +1,24 @@
 import re
 
 # da vedere dove viene utilizzato
-class Entity:
-	def __init__(self, start, end, entity_id=None, quote_id=None, quote_eid=None, proper=None, ner_cat=None, in_quote=None, text=None):
-		# print("creating")
-		self.start=start
-		self.end=end
-		self.entity_id=entity_id
-		self.quote_id=quote_id
-		self.proper=proper
-		self.ner_cat=ner_cat
-		self.in_quote=in_quote
-		self.quote_eid=quote_eid
-		self.text=text
-		self.quote_mention=None
-		self.global_start=None
-		self.global_end=None
+# class Entity:
+# 	def __init__(self, start, end, entity_id=None, quote_id=None, quote_eid=None, proper=None, ner_cat=None, in_quote=None, text=None):
+# 		# print("creating")
+# 		self.start=start
+# 		self.end=end
+# 		self.entity_id=entity_id
+# 		self.quote_id=quote_id
+# 		self.proper=proper
+# 		self.ner_cat=ner_cat
+# 		self.in_quote=in_quote
+# 		self.quote_eid=quote_eid
+# 		self.text=text
+# 		self.quote_mention=None
+# 		self.global_start=None
+# 		self.global_end=None
 
-	def __str__(self):
-		return ("%s %s %s %s %s %s %s %s" % (self.global_start, self.global_end, self.entity_id, self.proper, self.ner_cat, self.in_quote, self.quote_eid, self.text))
+# 	def __str__(self):
+# 		return ("%s %s %s %s %s %s %s %s" % (self.global_start, self.global_end, self.entity_id, self.proper, self.ner_cat, self.in_quote, self.quote_eid, self.text))
 
 class Token: # used to represent a single Token
 	def __init__(self, paragraph_id, sentence_id, index_within_sentence_idx, token_id, text, pos, fine_pos, lemma, deprel, dephead, ner, startByte):

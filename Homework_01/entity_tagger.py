@@ -170,7 +170,6 @@ class LitBankEntityTagger:
 		preds_in_order = self.model.tag_all(batched_sents, batched_data, batched_mask, batched_transforms, batched_orig_token_lens, ordering, doEntities=doEntities)
 		
 		return_vals={}
-
 		if doEntities:
 			for idx, preds in enumerate(preds_in_order):
 				for _, label, start, end in preds:
