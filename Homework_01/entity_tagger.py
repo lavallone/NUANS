@@ -11,7 +11,7 @@ class LitBankEntityTagger:
 		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 		self.tagset = sequence_layered_reader.read_tagset(model_tagset) # fa una semplice lettura dei possibili tag per eseguire la NER
 		
-  		# the model also tags 
+  		# the model also tags token with supersense tags --> a more informative version of NER tags!
 		supersenseTagset = pkg_resources.resource_filename(__name__, "supersense.tagset")
 		self.supersense_tagset=sequence_layered_reader.read_tagset(supersenseTagset)
 
@@ -85,7 +85,7 @@ class LitBankEntityTagger:
 			wn_batches.append(wn_senses)
 		return wn_batches
 
-	def tag(self, toks, doEntities=True): # toks are the tokens of the entire text
+	def tag(self, toks, doEntities=True): # toks are the Tokens of the processed text
 
 		max_sentence_length=500
 		entities=[]
@@ -100,18 +100,17 @@ class LitBankEntityTagger:
 		length=0
 		for tok in toks:
 			wptok=tok.text
-			# working with uncased BERT models, so add a special tag to denote capitalization --> ecco a che serve!
+			# working with uncased BERT models, so add a special tag to denote capitalization
 			if wptok[0].lower() != wptok[0]: # se la prima lettera e' una maiuscola
 				wptok="[CAP] " + wptok.lower()
 
-			toks=self.model.tokenizer.tokenize(wptok) # tokenizziamo il 'token' per darlo in input a BERT!
+			toks = self.model.tokenizer.tokenize(wptok) # tokenize the 'token' for giving it as input to BERT!
 			if lastSid is not None and ( tok.sentence_id != lastSid or length+len(toks)>max_sentence_length ):
 				sents.append(sent)
 				o_sents.append(o_sent)
 				sent=[]
 				o_sent=[]
 				length=0
-			
 			sent.append(toks)
 			o_sent.append(tok)
 
@@ -129,11 +128,9 @@ class LitBankEntityTagger:
 		cur_length=0 # current length
 
 		for idx, sent in enumerate(sents):
-
 			sent_len=0
 			for toks in sent:
 				sent_len+=len(toks)
-
 			if sent_len + cur_length >= max_sentence_length:
 				sentence.append(["[SEP]"])
 				sentences.append(sentence)
@@ -141,12 +138,9 @@ class LitBankEntityTagger:
 				sentence=[["[CLS]"]]
 				o_sent=[]
 				cur_length=0
-
 			cur_length+=sent_len
-
 			sentence.extend(sent)
 			o_sent.extend(o_sents[idx])
-
 
 		if len(sentence) > 1:		
 			sentence.append(["[SEP]"])
@@ -155,7 +149,7 @@ class LitBankEntityTagger:
 
 		sents=o_sentences
 
-		# da tokens a 'batch numerici'
+		# from bert tokens (that are natural-language-like) to numerical and batched tokens!
 		batched_sents, batched_data, batched_mask, batched_transforms, batched_orig_token_lens, ordering, order_to_batch_map = layered_reader.get_batches(self.model, sentences, batch_size, self.tagset, training=False)
 
 		batch_pos={}
@@ -168,11 +162,9 @@ class LitBankEntityTagger:
 				# print(tok)
 				batch_pos[batch_id][batch_position].append(tok)
 			batch_pos[batch_id][batch_position].append(None)
-
 		batched_pos=[None]*len(batch_pos)
 		for i in range(len(batch_pos)):
 			batched_pos[i]=batch_pos[i]
-
 
 		# qui avvengono le predizioni delle named entities
 		preds_in_order = self.model.tag_all(batched_sents, batched_data, batched_mask, batched_transforms, batched_orig_token_lens, ordering, doEntities=doEntities)

@@ -1,17 +1,14 @@
-import sys
 import re
-import math
 from transformers import BertTokenizer, BertModel 
-
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
 import numpy as np
 from utilities import crf
-#import booknlp.common.sequence_eval as sequence_eval
 from torch.nn import CrossEntropyLoss
+#import booknlp.common.sequence_eval as sequence_eval
 
-class Tagger(nn.Module): # modello che esegue le tasks
+class Tagger(nn.Module): # the actual model which performs NER tagging
 
 	def __init__(self, freeze_bert=False, base_model=None, tagset=None, supersense_tagset=None, tagset_flat=None, hidden_dim=100, flat_hidden_dim=200, device=None):
 		super(Tagger, self).__init__()
@@ -46,13 +43,16 @@ class Tagger(nn.Module): # modello che esegue le tasks
 		self.num_labels=len(tagset) + 2
 
 		###############################################################################################################
-		## we keep these fields for the compatibility with the prtrained models but we don't need it for the NER task!
-		self.supersense_tagset = None
+		## supersense task that could be exploited for NER tagging the 'FAIRY TALES and SHORT STORIES' dataset
+		self.supersense_tagset = supersense_tagset
 		self.num_supersense_labels = len(supersense_tagset) + 2
 		self.supersense_crf = crf.CRF(len(supersense_tagset), device)
 		self.rev_supersense_tagset = {supersense_tagset[v]:v for v in supersense_tagset}
 		self.rev_supersense_tagset[len(supersense_tagset)]="O"
 		self.rev_supersense_tagset[len(supersense_tagset)+1]="O"
+  
+		self.supersense_lstm1 = nn.LSTM(modelSize + 20, hidden_dim, bidirectional=True, batch_first=True)
+		self.supersense_hidden2tag1 = nn.Linear(hidden_dim * 2, self.num_supersense_labels)
   		###############################################################################################################
 
 		self.num_labels_flat=len(tagset_flat)
@@ -61,25 +61,20 @@ class Tagger(nn.Module): # modello che esegue le tasks
 		# BERT
 		self.tokenizer = BertTokenizer.from_pretrained(modelName, do_lower_case=False, do_basic_tokenize=False)
 		self.bert = BertModel.from_pretrained(modelName)
-		########################################################################################################
-
 		self.tokenizer.add_tokens(["[CAP]"], special_tokens=True) # we need it because we use pretrained UNCASED BERT models!
 		self.bert.resize_token_embeddings(len(self.tokenizer))
 		self.bert.eval()
-		
 		if freeze_bert: # we'll use the model as it is!
-			for param in self.bert.parameters():
-				param.requires_grad = False
+					for param in self.bert.parameters():
+						param.requires_grad = False
+		########################################################################################################
 
 		self.hidden_dim = hidden_dim
 
 		self.layered_dropout = nn.Dropout(0.20)
 
-		self.supersense_lstm1 = nn.LSTM(modelSize + 20, hidden_dim, bidirectional=True, batch_first=True)
-		self.supersense_hidden2tag1 = nn.Linear(hidden_dim * 2, self.num_supersense_labels)
-
 		########################################################################################################
-		# 3 LSTMs needed for predicting NESTED entities
+		# 3 LSTMs needed for predicting NESTED NER entities
 		self.lstm1 = nn.LSTM(modelSize, hidden_dim, bidirectional=True, batch_first=True)
 		self.hidden2tag1 = nn.Linear(hidden_dim * 2, self.num_labels)
 
@@ -96,8 +91,6 @@ class Tagger(nn.Module): # modello che esegue le tasks
 		self.flat_lstm = nn.LSTM(modelSize, self.flat_hidden_dim, bidirectional=True, batch_first=True, num_layers=1)
 
 		self.flat_classifier = nn.Linear(2*self.flat_hidden_dim, self.num_labels_flat)
-
-		param_group = []
 
 		self.bert_params={}
 		self.everything_else_params={}
@@ -330,7 +323,7 @@ class Tagger(nn.Module): # modello che esegue le tasks
 			for tags in t3:
 				all_tags3.append(list(tags.data.cpu().numpy()))
 			for tags3 in all_tags3:
-				fix(tags3) # non approfondire
+				fix(tags3) # not going into details
 
 			## Insert tokens into later layers that were compressed in earlier layers
 
@@ -560,149 +553,6 @@ class Tagger(nn.Module): # modello che esegue le tasks
 					preds_in_order[ind] = ordered_preds[i]
 
 		return preds_in_order
-
-	def tag(self, batched_sents, batched_data, batched_mask, batched_transforms, batched_orig_token_lens, ordering):
-		
-		c=0
-		ordered_preds=[]
-
-		with torch.no_grad():
-	
-			for b in range(len(batched_data)):
-				all_tags1, all_tags2, all_tags3=self.predict(batched_data[b], attention_mask=batched_mask[b], transforms=batched_transforms[b], lens=batched_orig_token_lens[b])
-
-				for d in range(len(all_tags1)):
-		
-					preds={}
-
-					for entity in self.get_spans(self.rev_tagset, c, all_tags1[d], batched_orig_token_lens[b][d], batched_sents[b][d][1:]):
-						preds[entity]=1
-					for entity in self.get_spans(self.rev_tagset, c, all_tags2[d], batched_orig_token_lens[b][d], batched_sents[b][d][1:]):
-						preds[entity]=1
-					for entity in self.get_spans(self.rev_tagset, c, all_tags3[d], batched_orig_token_lens[b][d], batched_sents[b][d][1:]):
-						preds[entity]=1
-
-					ordered_preds.append(preds)
-
-					c+=1
-
-
-			preds_in_order = [None for i in range(len(ordering))]
-			for i, ind in enumerate(ordering):
-				preds_in_order[ind] = ordered_preds[i]
-
-		return preds_in_order
-
-
-	def evaluate(self, test_batched_sents, test_batched_data, test_batched_mask, test_batched_labels, test_batched_transforms, test_batched_layered_labels1, test_batched_layered_labels2, test_batched_layered_labels3, test_batched_layered_labels4, dev_lens):
-
-		""" Evaluate input data (with labels) for layered sequence labeling """
-
-		self.eval()
-
-		with torch.no_grad():
-			preds={}
-			golds={}
-			c=0
-			for b in range(len(test_batched_data)):
-				all_tags1, all_tags2, all_tags3=self.predict(test_batched_data[b], attention_mask=test_batched_mask[b], transforms=test_batched_transforms[b], lens=dev_lens[0][b])
-				
-				for d in range(len(all_tags1)):
-
-					# remove [CLS] from the gold labels
-					# LitBank has max 4 layers
-					for entity in self.get_spans(self.rev_tagset, c, test_batched_layered_labels1[b][d][1:], dev_lens[0][b][d], test_batched_sents[b][d][1:]):
-						golds[entity]=1
-					for entity in self.get_spans(self.rev_tagset, c, test_batched_layered_labels2[b][d][1:], dev_lens[0][b][d], test_batched_sents[b][d][1:]):
-						golds[entity]=1
-					for entity in self.get_spans(self.rev_tagset, c, test_batched_layered_labels3[b][d][1:], dev_lens[0][b][d], test_batched_sents[b][d][1:]):
-						golds[entity]=1
-					for entity in self.get_spans(self.rev_tagset, c, test_batched_layered_labels4[b][d][1:], dev_lens[0][b][d], test_batched_sents[b][d][1:]):
-						golds[entity]=1
-	
-					# predicted tags already have [CLS] removed
-					# LitBank has max 4 layers but 4th layer has only 0.1% of tags, so let's just predict 3
-					for entity in self.get_spans(self.rev_tagset, c, all_tags1[d], dev_lens[0][b][d], test_batched_sents[b][d][1:]):
-						preds[entity]=1
-					for entity in self.get_spans(self.rev_tagset, c, all_tags2[d], dev_lens[0][b][d], test_batched_sents[b][d][1:]):
-						preds[entity]=1
-					for entity in self.get_spans(self.rev_tagset, c, all_tags3[d], dev_lens[0][b][d], test_batched_sents[b][d][1:]):
-						preds[entity]=1
-
-					c+=1
-
-			F1=sequence_eval.check_span_f1_two_dicts_subcat(golds, preds)
-
-			return F1
-
-	def evaluateFlat(self, dev_batched_data, dev_batched_mask, dev_batched_labels, dev_batched_transforms, metric, tagset):
-
-		num_labels=len(tagset)
-
-		self.eval()
-
-		with torch.no_grad():
-
-			ordered_preds=[]
-
-			all_preds=[]
-			all_golds=[]
-
-			for b in range(len(dev_batched_data)):
-
-				logits = self.forwardFlatSequence(dev_batched_data[b], token_type_ids=None, attention_mask=dev_batched_mask[b], transforms=dev_batched_transforms[b])
-
-				logits=logits.cpu()
-
-				ordered_preds += [np.array(r) for r in logits]
-				size=dev_batched_labels[b].shape
-
-				logits=logits.view(-1, size[1], num_labels)
-
-				for row in range(size[0]):
-					for col in range(size[1]):
-						if dev_batched_labels[b][row][col] != -100:
-							pred=np.argmax(logits[row][col])
-							all_preds.append(pred.cpu().numpy())
-							all_golds.append(dev_batched_labels[b][row][col].cpu().numpy())
-			
-			return metric(all_golds, all_preds, tagset)
-
-
-	def tagFlat(self, batched_sents, batched_data, batched_mask, batched_transforms, batched_orig_token_lens, ordering):
-		
-		with torch.no_grad():
-
-			c=0
-			ordered_preds=[]
-		
-			for b in range(len(batched_data)):
-
-				dataSize=batched_transforms[b].shape
-				batch_len=dataSize[0]
-				sequence_length=dataSize[1]
-				logits = self.forwardFlatSequence(batched_data[b], token_type_ids=None, attention_mask=batched_mask[b], transforms=batched_transforms[b])
-				logits=logits.view(-1, sequence_length, self.num_labels_flat)
-
-				logits=logits.cpu()
-
-				preds=np.argmax(logits, axis=2)
-				
-				for sentence in range(batch_len):
-					word_preds=[]
-
-					for idx in range(1,len(batched_sents[b][sentence])-1):
-						
-						word_preds.append((batched_sents[b][sentence][idx], int(preds[sentence][idx])))
-
-					ordered_preds.append(word_preds)
-
-			preds_in_order = [None for i in range(len(ordering))]
-			for i, ind in enumerate(ordering):
-				preds_in_order[ind] = ordered_preds[i]
-
-			return preds_in_order
-
 
 	def get_spans(self, rev_tagset, doc_idx, tags, length, sentence):
 		

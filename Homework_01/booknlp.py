@@ -39,7 +39,13 @@ class BookNLP:
 			if not Path(modelPath).is_dir(): # in case I create the folder "booknlp_models"
 				Path(modelPath).mkdir(parents=True, exist_ok=True)
 
-			if model_params["model"] == "big": # if I want to use the biggest model (297 M)
+			if model_params["model"] == "very big": # if I want to use the biggest model (459 M)
+				entityName="entities_google_bert_uncased_L-12_H-768_A-12.model"
+				self.entityPath=os.path.join(modelPath, entityName)
+				if not Path(self.entityPath).is_file():
+					print("downloading %s" % entityName)
+					urllib.request.urlretrieve("http://ischool.berkeley.edu/~dbamman/booknlp_models/%s" % entityName, self.entityPath)
+			if model_params["model"] == "big": # if I want to use the big model (297 M)
 				entityName="entities_google_bert_uncased_L-6_H-768_A-12-v1.0.model"
 				self.entityPath=os.path.join(modelPath, entityName)
 				if not Path(self.entityPath).is_file():
@@ -259,20 +265,17 @@ class BookNLP:
 					pass
 					
 				tokens = self.tagger.tag(data) # it returns a list of tokens of the class 'pipelines.Token' --> which have already some informations attached (like POS tag) thanks to Spacy
-
-				print("--- spacy: %.3f seconds ---" % (time.time() - start_time))
-				start_time = time.time()
-
-				if self.doEntities:
-					# we give the processed tokens by Spacy to the model for tagging them
-					entity_vals = self.entityTagger.tag(tokens, doEntities=self.doEntities)
-					entity_vals["entities"] = sorted(entity_vals["entities"]) # e' una lista di named entities rappresentate in questo modo --> (start_token, phraseEndToken, label, phrase)
-
-					# invece di file ho intenzione di creare dei json files
-					with open(join(outFolder, "%s_tokens.tsv" % (idd)), "w", encoding="utf-8") as out:
+				with open(join(outFolder, "%s_tokens.tsv" % (idd)), "w", encoding="utf-8") as out:
 						out.write("%s\n" % '\t'.join(["paragraph_ID", "sentence_ID", "token_ID_within_sentence", "token_ID_within_document", "word", "lemma", "byte_onset", "byte_offset", "POS_tag", "fine_POS_tag", "dependency_relation", "syntactic_head_ID", "event"]))
 						for token in tokens:
 							out.write("%s\n" % token)
+				print("--- spacy: %.3f seconds ---" % (time.time() - start_time))
+
+				if self.doEntities:
+					start_time = time.time()
+					# we give the processed tokens by Spacy to the model for tagging them
+					entity_vals = self.entityTagger.tag(tokens, doEntities=self.doEntities) # here we perform the predictions
+					entity_vals["entities"] = sorted(entity_vals["entities"]) # e' una lista di named entities rappresentate in questo modo --> (start_token, phraseEndToken, label, phrase)
 
 					print("--- entities: %.3f seconds ---" % (time.time() - start_time))
 					start_time=time.time()
