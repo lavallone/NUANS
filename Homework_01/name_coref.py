@@ -386,6 +386,7 @@ class NameCoref:
 					if hon_mapped is not None:
 						val=hon_mapped
 					new_text.append(val)
+					print(tokens)
 					print(val)
     
 			if len(new_text) > 0:
