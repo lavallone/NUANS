@@ -92,10 +92,10 @@ class BookNLP:
 					pass
 					
 				tokens = self.tagger.tag(data) # it returns a list of tokens of the class 'pipelines.Token' --> which have already some informations attached (like POS tag) thanks to Spacy
-				print(tokens)
 				with open(join(outFolder, "%s_tokens.tsv" % (idd)), "w", encoding="utf-8") as out:
 						out.write("%s\n" % '\t'.join(["paragraph_ID", "sentence_ID", "token_ID_within_sentence", "token_ID_within_document", "word", "lemma", "byte_onset", "byte_offset", "POS_tag", "fine_POS_tag", "dependency_relation", "syntactic_head_ID", "event"]))
 						for token in tokens:
+							print(token)
 							out.write("%s\n" % token)
 				print("--- spacy: %.3f seconds ---" % (time.time() - start_time))
 
