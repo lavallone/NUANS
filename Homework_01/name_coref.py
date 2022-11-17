@@ -381,7 +381,8 @@ class NameCoref:
 				hon_mapped=map_honorifics(tokens[i][0]) # we make the honorifics substitution
 				#print(hon_mapped) # se non ci sono sostituzioni da fare è None
 				# se (avviene la sostituzione oppure è un nome o un nome proprio) e la prima lettera è maiuscola
-				print(tokens[i][0].lower()[0]!=tokens[i][0][0])
+				print(tokens[i][0].lower()[0])
+				print(tokens[i][0][0])
 				if (hon_mapped is not None or (tokens[i][1] == "NOUN" or tokens[i][1] == "PROPN")) and tokens[i][0].lower()[0]!=tokens[i][0][0]:
 					val=tokens[i][0]
 					if hon_mapped is not None:
