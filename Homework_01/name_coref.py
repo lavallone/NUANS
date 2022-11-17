@@ -377,20 +377,22 @@ class NameCoref:
 
 			# andiamo a creare una nuova sequenza di tokens
 			new_text=[]
-			for i in range(start, end+1): # iteriamo su i token che compongono la named entity
+			for i in range(start, end+1): # iteriamo sui token che compongono la named entity
 				hon_mapped=map_honorifics(tokens[i][0]) # we make the honorifics substitution
-
+				print(hon_mapped)
 				# se (avviene la sostituzione oppure è un nome o un nome proprio) e la prima lettera è maiuscola
 				if (hon_mapped is not None or (tokens[i][1] == "NOUN" or tokens[i][1] == "PROPN")) and tokens[i][0].lower()[0]!=tokens[i][0][0]:
 					val=tokens[i][0]
 					if hon_mapped is not None:
 						val=hon_mapped
 					new_text.append(val)
-
+				print(val)
+    
 			if len(new_text) > 0:
 				entity_names.append(new_text)
 			else:
 				entity_names.append(text.split(" "))
+		print(is_named)
 		print(entity_names)
 		return self.cluster(entity_names, is_named, refs)
 
