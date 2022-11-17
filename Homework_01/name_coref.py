@@ -391,7 +391,7 @@ class NameCoref:
 				entity_names.append(new_text)
 			else:
 				entity_names.append(text.split(" "))
-      
+		print(entity_names)
 		return self.cluster(entity_names, is_named, refs)
 
 	def cluster(self, entities, is_named, refs): # refs is an empty list
