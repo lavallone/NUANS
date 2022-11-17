@@ -111,7 +111,7 @@ class NameCoref:
 					name=' '.join(entities[i]).lower()
 					if name != "":
 						uniq[name]+=1
-		print(uniq)
+		print(uniq) # Counter({'tom sawyer': 1, 'giovanni': 1, 'tom': 1})
 		
 		"""
 		# questa idea la utilizzo per l'homework!
@@ -127,6 +127,7 @@ class NameCoref:
 		subsets={}
 		for name1 in uniq: # iteriamo su tutti i nomi "diversi" che abbiamo trovato di PER
 			canonicals1=self.get_canonical(name1.split(" "))
+			print(canonicals1)
 			for canonical1 in canonicals1:
 				name1set=set(canonical1)
 				for name2 in uniq:
@@ -145,6 +146,7 @@ class NameCoref:
 						if name1set.issuperset(name2set):
 							subsets[name2]=1
 
+		print(subsets)
 		name_subpart_index={}
 
 		"""
