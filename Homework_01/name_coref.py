@@ -111,7 +111,7 @@ class NameCoref:
 					name=' '.join(entities[i]).lower()
 					if name != "":
 						uniq[name]+=1
-
+		print(uniq)
 		
 		"""
 		# questa idea la utilizzo per l'homework!
@@ -386,12 +386,14 @@ class NameCoref:
 					if hon_mapped is not None:
 						val=hon_mapped
 					new_text.append(val)
-			print(new_text)
+			
+			# se non ci sono modifiche delle onereficenze --> new_text == text
 			if len(new_text) > 0:
 				entity_names.append(new_text)
 			else:
 				entity_names.append(text.split(" "))
-		print(entity_names)
+		
+		print(entity_names) #--> [['Tom', 'Sawyer'], ['Giovanni'], ['Tom']]
 		return self.cluster(entity_names, is_named, refs)
 
 	def cluster(self, entities, is_named, refs): # refs is an empty list
