@@ -368,6 +368,7 @@ class NameCoref:
 
 		# we differentiate between entities and NAMED ENTITIES 
 		for start, end, cat, text in entities:
+			print(text)
 			ner_prop=cat.split("_")[0]
 			ner_type=cat.split("_")[1]
 			if ner_prop == "PROP" and ner_type == "PER":
