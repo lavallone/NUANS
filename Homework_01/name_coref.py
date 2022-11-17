@@ -126,7 +126,7 @@ class NameCoref:
 		# nell'homework non avrò il file degli "aliases.txt"
 		subsets={}
 		for name1 in uniq: # iteriamo su tutti i nomi "diversi" che abbiamo trovato di PER
-			canonicals1=self.get_canonical(name1.split(" "))
+			canonicals1=self.get_canonical(name1.split(" ")) # se non è presente in aliases.txt ritorna il nome del token
 			print(canonicals1)
 			for canonical1 in canonicals1:
 				name1set=set(canonical1)
@@ -143,10 +143,11 @@ class NameCoref:
 						if ' '.join(name1set) == ' '.join(name2set):
 							continue
 
-						if name1set.issuperset(name2set):
+						if name1set.issuperset(name2set): # è qui che faccio il controllo  del superset
 							subsets[name2]=1
 
-		print(subsets)
+		# in subsets abbiamo un dizionario dove ci segniamo quale entities sono interamente contenuti in altre entities!
+		
 		name_subpart_index={}
 
 		"""
@@ -171,7 +172,7 @@ class NameCoref:
 
 			canonicals=self.get_canonical(name.split(" "))
 			for canonical in canonicals:
-				variants=self.get_variants(canonical)
+				variants=self.get_variants(canonical) # questa funzione ci crea tutte le permutazioni! --> ci servirà
 
 				for v in variants:
 					if v not in name_subpart_index:
@@ -179,7 +180,7 @@ class NameCoref:
 
 					name_subpart_index[v][name]=1
 
-
+		print(name_subpart_index)
 		"""
 
 		Now let's assign each name *mention* to its entity.
