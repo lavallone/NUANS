@@ -148,6 +148,7 @@ class NameCoref:
 
 		# in subsets abbiamo un dizionario dove ci segniamo quale entities sono interamente contenuti in altre entities!
 		
+		print(subsets) # {"tom" : 1}
 		name_subpart_index={}
 
 		"""
@@ -181,6 +182,7 @@ class NameCoref:
 					name_subpart_index[v][name]=1
 
 		print(name_subpart_index)
+  
 		"""
 
 		Now let's assign each name *mention* to its entity.
