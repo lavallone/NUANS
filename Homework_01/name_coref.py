@@ -351,7 +351,7 @@ class NameCoref:
 		return refs
 
 	def cluster_only_nouns(self, entities, refs, tokens): # imagine refs as an empty list...
-
+		print("porcod io")
 		hon_mapper={"mister":"mr.", "mr.":"mr.", "mr":"mr.", "mistah":"mr.", "mastah":"mr.", "master":"mr.",
 		"miss":"miss", "ms.": "miss", "ms":"miss","missus":"miss","mistress":"miss",
 		"mrs.":"mrs.", "mrs":"mrs."
