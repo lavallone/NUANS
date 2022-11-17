@@ -351,7 +351,7 @@ class NameCoref:
 		return refs
 
 	def cluster_only_nouns(self, entities, refs, tokens): # imagine refs as an empty list...
-		print("porcod io")
+
 		hon_mapper={"mister":"mr.", "mr.":"mr.", "mr":"mr.", "mistah":"mr.", "mastah":"mr.", "master":"mr.",
 		"miss":"miss", "ms.": "miss", "ms":"miss","missus":"miss","mistress":"miss",
 		"mrs.":"mrs.", "mrs":"mrs."
@@ -368,7 +368,6 @@ class NameCoref:
 
 		# we differentiate between entities and NAMED ENTITIES 
 		for start, end, cat, text in entities:
-			print(text)
 			ner_prop=cat.split("_")[0]
 			ner_type=cat.split("_")[1]
 			if ner_prop == "PROP" and ner_type == "PER":
@@ -387,13 +386,12 @@ class NameCoref:
 					if hon_mapped is not None:
 						val=hon_mapped
 					new_text.append(val)
-				print(val)
+				#print(val)
     
 			if len(new_text) > 0:
 				entity_names.append(new_text)
 			else:
 				entity_names.append(text.split(" "))
-		print(is_named)
 		print(entity_names)
 		return self.cluster(entity_names, is_named, refs)
 
