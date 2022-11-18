@@ -74,7 +74,7 @@ class BookNLP:
 			self.tagger = spacy_tokenizer.SpacyPipeline(spacy_nlp) # we exploit the capabilities of Spacy
 			print("--- startup: %.3f seconds ---" % (time.time() - start_time))
 			
-	def process(self, filename, outFolder, idd): # questa funzione viene chiamata durante l'esecuzione della pipeline	
+	def process(self, filename, outFolder, name): # questa funzione viene chiamata durante l'esecuzione della pipeline	
 
 		with torch.no_grad():
 
@@ -90,12 +90,20 @@ class BookNLP:
 					os.makedirs(outFolder)
 				except FileExistsError:
 					pass
-					
+				
+				d = {"tokens" : [], "entities" : []}
+				f = open(outFolder+name+".json", "w")
+    
 				tokens = self.tagger.tag(data) # it returns a list of tokens of the class 'pipelines.Token' --> which have already some informations attached (like POS tag) thanks to Spacy
-				with open(join(outFolder, "%s_tokens.tsv" % (idd)), "w", encoding="utf-8") as out:
-						out.write("%s\n" % '\t'.join(["paragraph_ID", "sentence_ID", "token_ID_within_sentence", "token_ID_within_document", "word", "lemma", "byte_onset", "byte_offset", "POS_tag", "fine_POS_tag", "dependency_relation", "syntactic_head_ID", "event"]))
-						for token in tokens:
-							out.write("%s\n" % token)
+				for token in tokens:
+					token_dict = {"word" : token.text, "start_offset" : token.startByte, "end_offset" : token.endByte, "POS" : token.pos}	
+					d["tokens"].append(token_dict)
+     
+    			# with open(join(outFolder, "%s_tokens.tsv" % (name)), "w", encoding="utf-8") as out:
+				# 		out.write("%s\n" % '\t'.join(["paragraph_ID", "sentence_ID", "token_ID_within_sentence", "token_ID_within_document", "word", "lemma", "byte_onset", "byte_offset", "POS_tag", "fine_POS_tag", "dependency_relation", "syntactic_head_ID", "event"]))
+				# 		for token in tokens:
+				# 			out.write("%s\n" % token)
+       
 				print("--- spacy: %.3f seconds ---" % (time.time() - start_time))
 
 				if self.doEntities:
@@ -108,12 +116,22 @@ class BookNLP:
 					start_time=time.time()
 
 					entities = entity_vals["entities"]
-					with open(join(outFolder, "%s_entities.tsv" % (idd)), "w", encoding="utf-8") as out:
-						out.write("start_token\tend_token\tprop\tcat\ttext\n")
-						for start, end, cat, text in entities:
-							ner_prop=cat.split("_")[0]
-							ner_type=cat.split("_")[1]
-							out.write("%s\t%s\t%s\t%s\t%s\n" % (start, end, ner_prop, ner_type, text))
+					
+					for start, end, cat, text in entities:
+						ner_prop=cat.split("_")[0]
+						ner_type=cat.split("_")[1]
+						entity_dict = {"text" : text, "start_token" : start, "end_token" : end, "ner_prop" : ner_prop, "NER" : ner_type}
+						d["entities"].append(entity_dict)
+      
+     				# with open(join(outFolder, "%s_entities.tsv" % (name)), "w", encoding="utf-8") as out:
+					# 	out.write("start_token\tend_token\tprop\tcat\ttext\n")
+					# 	for start, end, cat, text in entities:
+					# 		ner_prop=cat.split("_")[0]
+					# 		ner_type=cat.split("_")[1]
+					# 		out.write("%s\t%s\t%s\t%s\t%s\n" % (start, end, ner_prop, ner_type, text))
+
+					json.dump(d, f)
+					f.close()
 
 				print("--- TOTAL (excl. startup): %.3f seconds ---, %s words" % (time.time() - originalTime, len(tokens)))
 				return time.time() - originalTime

@@ -119,6 +119,6 @@ class LitBankEntityTagger:
 					if phraseEndToken == -2:
 						phraseEndToken=start_token
 					entities.append((start_token, phraseEndToken, label, phrase))
-			return_vals["entities"]=entities
+			return_vals["entities"] = entities
 
 		return return_vals
