@@ -34,18 +34,18 @@ if __name__ == "__main__":
 	fairy_tales_list = [inputFairyFolder+s for s in os.listdir(inputFairyFolder)]
 	short_stories_list = [inputShortFolder+s for s in os.listdir(inputShortFolder)]
 	stories_list = fairy_tales_list + short_stories_list
-	print(stories_list)
 	#inputFile=args["inputFile"]
 	#outputFolder=args["outputFolder"]
 	outputFolder="/content/results/" # here I'm going to save the computed named entities!
 	#idd=args["id"]
 	model_size=args["model_size"]
  
-	# model_params={"pipeline":"entity", "model":model_size,} # we exploit only the named entity tagger of the BookNLP pipeline!
-	# booknlp = BookNLP(model_params)
+	model_params={"pipeline":"entity", "model":model_size,} # we exploit only the named entity tagger of the BookNLP pipeline!
+	booknlp = BookNLP(model_params)
 
-	# for s in tqdm(stories_list):
-	# 	inputFile = s
-	# 	name = extract_name(s)
-	# 	print("tagging %s" % inputFile)
-	# 	booknlp.process(inputFile, outputFolder, name)
+	for s in tqdm(stories_list):
+		inputFile = s
+		name = extract_name(s)
+		print("tagging %s" % inputFile)
+		booknlp.process(inputFile, outputFolder, name)
+		break
