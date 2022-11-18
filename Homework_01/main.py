@@ -52,4 +52,3 @@ if __name__ == "__main__":
 		name = extract_name(s)
 		print("tagging %s" % inputFile)
 		booknlp.process(inputFile, outputFolder, name)
-		break
