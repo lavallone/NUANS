@@ -1,9 +1,8 @@
-import sys
 import argparse
 from transformers import logging
 logging.set_verbosity_error()
 from pathlib import Path
-import os
+from tqdm import tqdm
 from booknlp import BookNLP
 
 def extract_name(s):
@@ -29,6 +28,7 @@ if __name__ == "__main__":
 	args = vars(parser.parse_args())
 
 	stories_list = args["stories_list"]
+	print(stories_list)
 	#inputFile=args["inputFile"]
 	#outputFolder=args["outputFolder"]
 	outputFolder="/content/results/" # here I'm going to save the computed named entities!
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
 	model_params={"pipeline":"entity", "model":model_size,} # we exploit only the named entity tagger of the BookNLP pipeline!
 	booknlp = BookNLP(model_params)
-	for s in stories_list:
+	for s in tqdm(stories_list):
 		inputFile = s
 		name = extract_name(s)
 		print("tagging %s" % inputFile)
