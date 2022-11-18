@@ -1,7 +1,7 @@
 import argparse
 from transformers import logging
 logging.set_verbosity_error()
-from pathlib import Path
+import os
 from tqdm import tqdm
 from booknlp import BookNLP
 
@@ -19,7 +19,8 @@ def extract_name(s):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--stories_list', help='List of filenames to run BookNLP NER tagger on', required=True)
+	parser.add_argument('--inputFairyFolder', help='Folder containing Fairy Tales', required=True)
+	parser.add_argument('--inputShortFolder', help='Folder containing Short Stories', required=True)
 	#parser.add_argument('-i','--inputFile', help='Filename to run BookNLP on', required=True)
 	#parser.add_argument('-o','--outputFolder', help='Folder to write results to', required=True)
 	#parser.add_argument('--id', help='ID of text (for creating filenames within output folder)', required=True)
@@ -27,18 +28,23 @@ if __name__ == "__main__":
 
 	args = vars(parser.parse_args())
 
-	stories_list = args["stories_list"]
+	#stories_list = args["stories_list"]
+	inputFairyFolder = args["inputFairyFolder"]
+	inputShortFolder = args["inputShortFolder"]
+	stories_list = os.listdir(inputFairyFolder)
+	stories_list.append(os.listdir(inputShortFolder))
 	print(stories_list)
 	#inputFile=args["inputFile"]
 	#outputFolder=args["outputFolder"]
 	outputFolder="/content/results/" # here I'm going to save the computed named entities!
 	#idd=args["id"]
 	model_size=args["model_size"]
+ 
+	# model_params={"pipeline":"entity", "model":model_size,} # we exploit only the named entity tagger of the BookNLP pipeline!
+	# booknlp = BookNLP(model_params)
 
-	model_params={"pipeline":"entity", "model":model_size,} # we exploit only the named entity tagger of the BookNLP pipeline!
-	booknlp = BookNLP(model_params)
-	for s in tqdm(stories_list):
-		inputFile = s
-		name = extract_name(s)
-		print("tagging %s" % inputFile)
-		booknlp.process(inputFile, outputFolder, name)
+	# for s in tqdm(stories_list):
+	# 	inputFile = s
+	# 	name = extract_name(s)
+	# 	print("tagging %s" % inputFile)
+	# 	booknlp.process(inputFile, outputFolder, name)
