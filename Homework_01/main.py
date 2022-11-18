@@ -31,10 +31,10 @@ if __name__ == "__main__":
 	#stories_list = args["stories_list"]
 	inputFairyFolder = args["inputFairyFolder"]
 	inputShortFolder = args["inputShortFolder"]
-	fairy_tales_list = os.listdir(inputFairyFolder)
-	short_stories_list = os.listdir(inputShortFolder)
-	print(len(fairy_tales_list))
-	print(len(short_stories_list))
+	fairy_tales_list = [inputFairyFolder+s for s in os.listdir(inputFairyFolder)]
+	short_stories_list = [inputShortFolder+s for s in os.listdir(inputShortFolder)]
+	stories_list = fairy_tales_list + short_stories_list
+	print(stories_list)
 	#inputFile=args["inputFile"]
 	#outputFolder=args["outputFolder"]
 	outputFolder="/content/results/" # here I'm going to save the computed named entities!
