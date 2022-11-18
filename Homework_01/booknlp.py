@@ -120,7 +120,7 @@ class BookNLP:
 					for start, end, cat, text in entities:
 						ner_prop=cat.split("_")[0]
 						ner_type=cat.split("_")[1]
-						entity_dict = {"text" : text, "start_token" : start, "end_token" : end, "ner_prop" : ner_prop, "NER" : ner_type}
+						entity_dict = {"text" : text, "start_token" : start, "end_token" : end, "ner_prop" : ner_prop, "ner" : ner_type}
 						d["entities"].append(entity_dict)
       
      				# with open(join(outFolder, "%s_entities.tsv" % (name)), "w", encoding="utf-8") as out:
