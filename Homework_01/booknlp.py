@@ -1,10 +1,8 @@
 import spacy
 from utilities import spacy_tokenizer
 from entity_tagger import LitBankEntityTagger
-from os.path import join
 import os
 import json
-from collections import Counter
 import time
 from pathlib import Path
 import urllib.request 

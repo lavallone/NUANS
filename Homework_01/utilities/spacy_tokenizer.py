@@ -70,7 +70,7 @@ class SpacyPipeline:
 		for idx, token in enumerate(doc):
 			token.sent_start=sents[idx]
 
-		for name, proc in self.spacy_nlp.pipeline:
+		for _, proc in self.spacy_nlp.pipeline:
 			doc = proc(doc)
 
 		return self.process_doc(doc)

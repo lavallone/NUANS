@@ -5,7 +5,6 @@ import torch.nn.functional as F
 import torch
 import numpy as np
 from utilities import crf
-from torch.nn import CrossEntropyLoss
 #import booknlp.common.sequence_eval as sequence_eval
 
 class NER_Model(nn.Module): # the actual model which performs NER tagging
