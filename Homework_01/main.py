@@ -31,7 +31,7 @@ if __name__ == "__main__":
 	model_params={"pipeline":"entity", "model":model_size,} # we exploit only the named entity tagger of the BookNLP pipeline!
 	booknlp = BookNLP(model_params)
 
-	if args["process_all"] == True:
+	if args["process_all"] == "True":
 		inputFairyFolder = args["inputFairyFolder"]
 		inputShortFolder = args["inputShortFolder"]
 		fairy_tales_list = [inputFairyFolder+s for s in os.listdir(inputFairyFolder)]
