@@ -9,5 +9,6 @@ scipy
 transformers
 sentence-transformers
 booknlp
-#wandb
-#seaborn
+rouge_score
+wandb
+seaborn
