@@ -9,8 +9,9 @@ from functools import partial
 from src.hyperparameters import Hparams
 from dataclasses import asdict
 from tqdm import tqdm
+import random
 
-def create_chunk_tokens(tokens, max_encoder_length):
+def create_chunk_tokens(tokens, max_encoder_length, max_num_chunks):
     input_ids = tokens["input_ids"]
     attention_mask = tokens["attention_mask"]
 
@@ -33,15 +34,19 @@ def create_chunk_tokens(tokens, max_encoder_length):
     else:
         max_batch_length = max_length
 
-    num_chunks = []
+    num_chunks_list = []
     ids_stack = []
     attn_stack = []
     for i in range(input_ids.shape[0]): # we itearate through each texts
         ids_chunks = list(input_ids_list[i].split(max_batch_length))
         attn_chunks = list(attention_mask_list[i].split(max_batch_length))
+        num_chunks = len(ids_chunks)
         
-        num_chunks.append(len(ids_chunks)) # in this way in the forward function we know which embedding chunks belong to which text
-        for i in range(len(ids_chunks)): # for each created chunk
+        if num_chunks > max_num_chunks: # we set a maximum number of chunks for each text
+            num_chunks = max_num_chunks
+        
+        num_chunks_list.append(num_chunks) # in this way in the forward function we know which embedding chunks belong to which text
+        for i in range(len(ids_chunks)): # for each created chunk (without considering yet the max number of chunks we set)
             ids_chunks[i] = torch.cat([torch.tensor([101]), ids_chunks[i], torch.tensor([102])])
             attn_chunks[i] = torch.cat([torch.tensor([1]), attn_chunks[i], torch.tensor([1])])
             
@@ -49,10 +54,13 @@ def create_chunk_tokens(tokens, max_encoder_length):
             if pad_len > 0:
                 ids_chunks[i] = torch.cat([ids_chunks[i], torch.tensor([0] * pad_len)])
                 attn_chunks[i] = torch.cat([attn_chunks[i], torch.tensor([0] * pad_len)])
-        ids_stack += ids_chunks
-        attn_stack += attn_chunks
+        
+        # we select 'num_chunks' randomly 
+        rnd_idx = sorted(random.sample(range(len(ids_chunks)), num_chunks))
+        ids_stack += [ids_chunks[i] for i in rnd_idx]
+        attn_stack += [attn_chunks[i] for i in rnd_idx]
 
-    return {"input_ids" : (torch.stack(ids_stack)).long() , "attention_mask" : (torch.stack(attn_stack)).int(), "num_chunks" : torch.tensor(num_chunks).int()}
+    return {"input_ids" : (torch.stack(ids_stack)).long() , "attention_mask" : (torch.stack(attn_stack)).int(), "num_chunks" : torch.tensor(num_chunks_list).int()}
 
 class FairySum_Dataset(Dataset):
     def __init__(self, data_dir: str, texts_path: str, candidates_path: str, train_or_test: str, gold_path: str = None, scores_path: str = None, abstractives_path: str = None):
@@ -115,7 +123,7 @@ class FairySum_DataModule(pl.LightningDataModule):
     # STATIC OBJECTS --> I need to call them for the 'val_ROUGE' computation during the training process
     texts = json.load(open(asdict(Hparams())["texts_path"], "r"))
     candidates = json.load(open(asdict(Hparams())["candidates_path"], "r"))
-    gold = json.load(open(asdict(Hparams())["gold_path"], "r"))
+    gold_test = json.load(open("data/gold/gold_test.json", "r"))
     
     def __init__(self, hparams: dict):
         super().__init__()
@@ -153,6 +161,7 @@ class FairySum_DataModule(pl.LightningDataModule):
             persistent_workers=True
         )
     
+    # for efficiency reasons, each time we pick a batch from the dataloader, we call this function!
     def collate_fn(self, batch, train_or_test):
         batch_out = dict()
         batch_out["id"] = [sample["id"] for sample in batch]
@@ -162,12 +171,12 @@ class FairySum_DataModule(pl.LightningDataModule):
             tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
         elif self.hparams.model == "longformer":
             tokenizer = LongformerTokenizer.from_pretrained("allenai/longformer-base-4096")
-        batch_out["text"] = create_chunk_tokens( tokenizer([sample["text"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length )
+        batch_out["text"] = create_chunk_tokens( tokenizer([sample["text"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks )
         candidates_num = len(batch[0]["candidates"])
-        batch_out["candidates"] = [ create_chunk_tokens( tokenizer([sample["candidates"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length ) for i in range(candidates_num) ]
+        batch_out["candidates"] = [ create_chunk_tokens( tokenizer([sample["candidates"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks ) for i in range(candidates_num) ]
         if train_or_test == "train":
             batch_out["scores"] = torch.as_tensor([sample["scores"] for sample in batch])
-            batch_out["gold"] = [ create_chunk_tokens( tokenizer([sample["gold"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length ) for i in range(3) ] # the gold summaries can be maximum 3!
+            batch_out["gold"] = [ create_chunk_tokens( tokenizer([sample["gold"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks ) for i in range(3) ] # the gold summaries can be maximum 3!
             batch_out["num_gold"] = [sample["num_gold"] for sample in batch]
-            batch_out["abstractive"] = create_chunk_tokens( tokenizer([sample["abstractive"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length )
+            batch_out["abstractive"] = create_chunk_tokens( tokenizer([sample["abstractive"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks )
         return batch_out

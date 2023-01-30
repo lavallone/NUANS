@@ -13,7 +13,7 @@ class Hparams:
     abstractives_path: str = "data/abstractives/abstractives.json"
     batch_size: int = 1 # size of the batches
     n_cpu: int = 8  # number of cpu threads to use for the dataloaders
-    pin_memory: bool = True # parameter to pin memory in dataloader
+    pin_memory: bool = False # parameter to pin memory in dataloader
     
     # EXTRACTION phase params
     sbert_mode: str = "extraction" # extraction or evaluation
@@ -21,7 +21,7 @@ class Hparams:
     # SELECTION phase params
     length_conf_int: int = 5
     k_range: int = 10
-    pick_random_n: int = 10
+    pick_random_n: int = 5
     
     # BERT params
     model: str = "bert" # or "roberta" or "longformer"
@@ -32,4 +32,5 @@ class Hparams:
     min_lr: float = 1e-8 # min lr for ReduceLROnPlateau
     adam_eps: float = 1e-6 # term added to the denominator to improve numerical stability
     wd: float = 1e-6 # weight decay as regulation strategy
-    margin_loss: float = 0.01  
+    margin_loss: float = 0.01
+    max_num_chunks: int = 10

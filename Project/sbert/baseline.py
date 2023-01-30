@@ -84,7 +84,7 @@ def degree_centrality_scores(similarity_matrix, threshold=None, increase_power=T
 
 
 class SentenceBERT(pl.LightningModule):
-    def __init__(self, hparams, predictions):
+    def __init__(self, hparams, predictions = None):
         super(SentenceBERT, self).__init__()
         self.save_hyperparameters(hparams)
         self.predictions = predictions
