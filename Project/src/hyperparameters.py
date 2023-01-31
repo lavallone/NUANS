@@ -11,7 +11,7 @@ class Hparams:
     candidates_path: str = "data/candidates/candidates.json"
     scores_path: str = "data/candidates/scores.json"
     abstractives_path: str = "data/abstractives/abstractives.json"
-    batch_size: int = 1 # size of the batches
+    batch_size: int = 2 # size of the batches
     n_cpu: int = 8  # number of cpu threads to use for the dataloaders
     pin_memory: bool = False # parameter to pin memory in dataloader
     
@@ -19,13 +19,13 @@ class Hparams:
     sbert_mode: str = "extraction" # extraction or evaluation
     
     # SELECTION phase params
-    length_conf_int: int = 5
-    k_range: int = 10
-    pick_random_n: int = 5
+    length_conf_int: int = 3
+    k_range: int = 6
+    pick_random_n: int = 4
     
     # BERT params
     model: str = "bert" # or "roberta" or "longformer"
-    fine_tune: bool = True
+    fine_tune: str = "v1"
     hidden_features: int = 768 # don't know if  I'll use it
     max_length: int = 512
     lr: float = 2e-4 # 2e-4 or 1e-3
@@ -36,4 +36,5 @@ class Hparams:
     max_num_chunks_text: int = 10
     max_num_chunks: int = 2
     
-# BERT --> batch=2, num_candidates=51, max_num_chunks_text=10, max_num_chunks=2, only the last layer not freeze!
+# BERT --> batch=2, num_candidates=51, max_num_chunks_text=10, max_num_chunks=2, fine_tune=v1!
+# BERT --> batch=2, num_candidates=51, max_num_chunks_text=10, max_num_chunks=2, fine_tune=v2!

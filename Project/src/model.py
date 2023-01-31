@@ -22,13 +22,19 @@ class MatchSum(pl.LightningModule):
         
         for param in self.model.parameters():
             param.requires_grad = False
-        if self.hparams.fine_tune:
-            # we can unfreeze only some layers due to limited gpu card memory --> this is because when we train the tensor 'with gradient' are loaded to the GPU !
+        if self.hparams.fine_tune=="v1":
             for param in self.model.pooler.parameters():
                 param.requires_grad = True
-            unfreeze = [11] # [10, 11] # the last two layers of the encoder block
+            unfreeze = [11]
             for i in unfreeze:
                 for param in self.model.encoder.layer[i].parameters():
+                    param.requires_grad = True
+        elif self.hparams.fine_tune=="v2":
+            for param in self.model.pooler.parameters():
+                param.requires_grad = True
+            unfreeze = [10, 11] # the last two layers of the encoder block
+            for i in unfreeze:
+                for param in self.model.encoder.layer[i].output.parameters():
                     param.requires_grad = True
         
         device = "cuda" if torch.cuda.is_available() else "cpu"
