@@ -11,7 +11,10 @@ from dataclasses import asdict
 from tqdm import tqdm
 import random
 
-def create_chunk_tokens(tokens, max_encoder_length, max_num_chunks):
+def create_chunk_tokens(tokens, max_encoder_length, max_num_chunks, max_num_chunks_text=None):
+    if max_num_chunks_text != None: # it means we're chunking the original text
+        max_num_chunks = max_num_chunks_text
+    
     input_ids = tokens["input_ids"]
     attention_mask = tokens["attention_mask"]
 
@@ -92,8 +95,15 @@ class FairySum_Dataset(Dataset):
             text = ' '.join(self.texts[story])
             candidates = []
             for c in self.candidates[story]:
-                   candidates.append(' '.join([self.texts[story][i] for i in c]))
-            if self.train_or_test == "train": 
+                candidates.append(' '.join([self.texts[story][i] for i in c]))
+                
+            assert self.train_or_test=="train" or self.train_or_test=="test"
+            if self.train_or_test == "test":
+                scores = [0 for _ in range(51)]
+                gold = ["","",""]
+                num_gold = 0
+                abstractive = ""
+            elif self.train_or_test == "train": 
                 scores = self.scores[story]
                 # ------------------- gold summaries handling ------------------- #
                 gold = []
@@ -109,9 +119,7 @@ class FairySum_Dataset(Dataset):
                 assert len(gold) == 3
                 # --------------------------------------------------------------- #
                 abstractive = self.abstractives[story]
-                self.data.append({"id" : story, "text": text, "candidates" : candidates, "scores" : scores, "gold" : gold, "num_gold" : num_gold, "abstractive" : abstractive})
-            else:
-                self.data.append({"id" : story, "text": text, "candidates" : candidates})
+            self.data.append({"id" : story, "text": text, "candidates" : candidates, "scores" : scores, "gold" : gold, "num_gold" : num_gold, "abstractive" : abstractive})
     
     def __len__(self):
         return len(self.data)
@@ -145,7 +153,7 @@ class FairySum_DataModule(pl.LightningDataModule):
             batch_size=self.hparams.batch_size,
             shuffle=True,
             num_workers=self.hparams.n_cpu,
-            collate_fn = partial(self.collate_fn, train_or_test="train"),
+            collate_fn = self.collate,
             pin_memory=self.hparams.pin_memory,
             persistent_workers=True
         )
@@ -156,13 +164,13 @@ class FairySum_DataModule(pl.LightningDataModule):
             batch_size=self.hparams.batch_size,
             shuffle=False,
             num_workers=self.hparams.n_cpu,
-            collate_fn = partial(self.collate_fn, train_or_test="test"),
+            collate_fn = self.collate,
             pin_memory=self.hparams.pin_memory,
             persistent_workers=True
         )
     
     # for efficiency reasons, each time we pick a batch from the dataloader, we call this function!
-    def collate_fn(self, batch, train_or_test):
+    def collate(self, batch):
         batch_out = dict()
         batch_out["id"] = [sample["id"] for sample in batch]
         if self.hparams.model == "bert":
@@ -171,12 +179,11 @@ class FairySum_DataModule(pl.LightningDataModule):
             tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
         elif self.hparams.model == "longformer":
             tokenizer = LongformerTokenizer.from_pretrained("allenai/longformer-base-4096")
-        batch_out["text"] = create_chunk_tokens( tokenizer([sample["text"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks )
+        batch_out["text"] = create_chunk_tokens( tokenizer([sample["text"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks, self.hparams.max_num_chunks_text )
         candidates_num = len(batch[0]["candidates"])
         batch_out["candidates"] = [ create_chunk_tokens( tokenizer([sample["candidates"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks ) for i in range(candidates_num) ]
-        if train_or_test == "train":
-            batch_out["scores"] = torch.as_tensor([sample["scores"] for sample in batch])
-            batch_out["gold"] = [ create_chunk_tokens( tokenizer([sample["gold"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks ) for i in range(3) ] # the gold summaries can be maximum 3!
-            batch_out["num_gold"] = [sample["num_gold"] for sample in batch]
-            batch_out["abstractive"] = create_chunk_tokens( tokenizer([sample["abstractive"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks )
+        batch_out["scores"] = torch.as_tensor([sample["scores"] for sample in batch])
+        batch_out["gold"] = [ create_chunk_tokens( tokenizer([sample["gold"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks ) for i in range(3) ] # the gold summaries can be maximum 3!
+        batch_out["num_gold"] = [sample["num_gold"] for sample in batch]
+        batch_out["abstractive"] = create_chunk_tokens( tokenizer([sample["abstractive"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks )
         return batch_out

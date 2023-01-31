@@ -33,4 +33,5 @@ class Hparams:
     adam_eps: float = 1e-6 # term added to the denominator to improve numerical stability
     wd: float = 1e-6 # weight decay as regulation strategy
     margin_loss: float = 0.01
-    max_num_chunks: int = 10
+    max_num_chunks_text: int = 10
+    max_num_chunks: int = 2

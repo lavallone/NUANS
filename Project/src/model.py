@@ -1,17 +1,12 @@
-from collections import Counter
 import torch
-from torch import optim, nn
-import torch.nn.functional as F
+from torch import optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-import wandb
 import numpy as np
-import json
 import pytorch_lightning as pl
 from .data_module import FairySum_DataModule
-import random
-import gc
 from transformers import BertModel, RobertaModel, LongformerModel
 from datasets import load_metric
+from tqdm import tqdm
 
 
 class MatchSum(pl.LightningModule):
@@ -27,72 +22,48 @@ class MatchSum(pl.LightningModule):
         
         for param in self.model.parameters():
             param.requires_grad = False
-        if self.hparams.fine_tune: # da capire meglio quali layers unfreezare o no !!!!
+        if self.hparams.fine_tune:
             # we can unfreeze only some layers due to limited gpu card memory --> this is because when we train the tensor 'with gradient' are loaded to the GPU !
             for param in self.model.pooler.parameters():
                 param.requires_grad = True
-            unfreeze = [10, 11] # the last two layers of the encoder block
+            unfreeze = [11] # [10, 11] # the last two layers of the encoder block
             for i in unfreeze:
                 for param in self.model.encoder.layer[i].parameters():
                     param.requires_grad = True
-
+        
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model.to(device)
         self.rouge = load_metric("rouge")
 
     def compute_chunk_embedding(self, text_embed, num_chunks):
         init_index = 0
         new_text_embed = []
         for i in num_chunks:
-            t = torch.index_select(text_embed, 0, torch.arange(init_index+i).to(text_embed.device))
+            t = torch.index_select(text_embed, 0, torch.arange(init_index+i))
             new_text_embed.append(t.mean(dim=0))
             init_index += i
         return torch.stack(new_text_embed)
     
-    def forward_1(self, text):
-        num_chunks = text["num_chunks"]
-        chunk_text_embed = self.model(text["input_ids"], attention_mask = text["attention_mask"]).pooler_output
-        chunk_text_embed = chunk_text_embed
-        text_embed = self.compute_chunk_embedding(chunk_text_embed, num_chunks)
-        del text
-        del chunk_text_embed
-        return text_embed
-
-    def forward_2(self, candidate):
-        num_chunks = candidate["num_chunks"]
-        chunk_cand_embed = self.model(candidate["input_ids"], attention_mask = candidate["attention_mask"]).pooler_output
-        chunk_cand_embed = chunk_cand_embed
-        cand_embed = self.compute_chunk_embedding(chunk_cand_embed, num_chunks)
-        del candidate
-        del chunk_cand_embed
-        return cand_embed
-
-    def forward_3(self, gold):
-        num_chunks = gold["num_chunks"]
-        chunk_gold_embed = self.model(gold["input_ids"], attention_mask = gold["attention_mask"]).pooler_output
-        chunk_gold_embed = chunk_gold_embed
-        gold_embed = self.compute_chunk_embedding(chunk_gold_embed, num_chunks)
-        del gold
-        del chunk_gold_embed
-        return gold_embed
-    
-    def forward_4(self, abstractive):
-        num_chunks = abstractive["num_chunks"]
-        chunk_abstr_embed = self.model(abstractive["input_ids"], attention_mask = abstractive["attention_mask"]).pooler_output
-        chunk_abstr_embed = chunk_abstr_embed
-        abstr_embed = self.compute_chunk_embedding(chunk_abstr_embed, num_chunks)
-        del abstractive
-        del chunk_abstr_embed
-        return abstr_embed
+    def bert_forward(self, t):
+        num_chunks = t["num_chunks"]
+        num_chunks = num_chunks.to("cpu")
+        chunk_t_embed = self.model(t["input_ids"].to(self.model.device), attention_mask = t["attention_mask"].to(self.model.device)).pooler_output
+        chunk_t_embed = chunk_t_embed.to("cpu")
+        t_embed = self.compute_chunk_embedding(chunk_t_embed, num_chunks)
+        del t["input_ids"], t["attention_mask"]
+        torch.cuda.empty_cache()
+        return t_embed
         
     def forward(self, x):
         text = x["text"]
-        text_embed = self.forward_1(text)
+        text_embed = self.bert_forward(text)
   
         # ------------------- candidates ------------------- #
         candidates = []
         candidates_num = len(x["candidates"])
         for i in range(candidates_num):
             candidate = x["candidates"][i]
-            cand_embed = self.forward_2(candidate)
+            cand_embed = self.bert_forward(candidate)
             candidates.append(cand_embed)
   
         scores = x["scores"]
@@ -106,20 +77,18 @@ class MatchSum(pl.LightningModule):
             sorted_cand_embed_list = [e[1] for e in cand_embed_list_zip]
             sorted_cand_embed_stack = torch.stack(sorted_cand_embed_list)
             new_text_embed = text_embed[i].expand_as(sorted_cand_embed_stack)
-            candidates_scores_list.append(torch.cosine_similarity(sorted_cand_embed_stack, new_text_embed.to(sorted_cand_embed_stack.device), dim=-1))
+            candidates_scores_list.append(torch.cosine_similarity(sorted_cand_embed_stack, new_text_embed, dim=-1))
         candidates_scores = torch.stack(candidates_scores_list)
-        del scores
         
         if not self.training: # eval mode
             return candidates_scores
         
-        else: # train mode
-            
+        else: # train mode   
             # ------------------- gold ------------------- #
             golds = []
             for i in range(3):
                 gold = x["gold"][i]
-                gold_embed = self.forward_3(gold)
+                gold_embed = self.bert_forward(gold)
                 golds.append(gold_embed)
 
             gold_score_list = []
@@ -135,8 +104,8 @@ class MatchSum(pl.LightningModule):
             
             # ------------------- abstractive ------------------- #
             abstractive = x["abstractive"]
-            abstr_embed = self.forward_4(abstractive)
-            abstractive_score = torch.cosine_similarity(abstr_embed, text_embed.to(abstr_embed.device), dim=-1)
+            abstr_embed = self.bert_forward(abstractive)
+            abstractive_score = torch.cosine_similarity(abstr_embed, text_embed, dim=-1)
 
             return candidates_scores, gold_score, abstractive_score
 
@@ -186,12 +155,13 @@ class MatchSum(pl.LightningModule):
         
         return {"loss": loss_1 + loss_2 + loss_3}
 
+        
     def training_step(self, batch, batch_idx):
-        cand_score, gold_score, abstr_score = self(batch)
+        cand_score, gold_score, abstr_score = self(batch) # dovrebbero essere tutti tensori in CPU
         loss = self.loss_function(cand_score, gold_score, abstr_score)
-        #elf.log_dict(loss)
+        self.log_dict(loss)
         # since we only monitor the loss for the training phase, we don't need to write additional 
-          # code in the 'training_epoch_end' function!
+        # code in the 'training_epoch_end' function!
         return {'loss': loss['loss']}
 
     def predict(self, batch):
@@ -206,7 +176,7 @@ class MatchSum(pl.LightningModule):
 
     def compute_ROUGE(self, ids, best_candidates):
         rouge_score_list = []
-        for story, best_candidate in list(zip(ids, best_candidates)):
+        for story, best_candidate in tqdm(list(zip(ids, best_candidates))):
             gold_list = FairySum_DataModule.gold_test[story]
             num_gold = len(gold_list)
             story_score = 0
@@ -216,13 +186,11 @@ class MatchSum(pl.LightningModule):
                 story_score += ((results["rougeL"].low.fmeasure+results["rougeL"].mid.fmeasure+results["rougeL"].high.fmeasure)/3)
             story_score /= num_gold
             rouge_score_list.append(story_score)
-        return (torch.tensor(rouge_score_list).mean())[0]
+        return torch.tensor(rouge_score_list).mean()
  
     def validation_step(self, batch, batch_idx):
         pred = self.predict(batch) # it returns the list of the best summaries for each story
         # good practice to follow with pytorch_lightning for logging values each iteration!
         # https://github.com/Lightning-AI/lightning/issues/4396
-        self.compute_ROUGE.update(batch["id"], pred) # speriamo funzioni!
-        self.log("val_ROUGE", self.compute_ROUGE, on_step=False, on_epoch=True, prog_bar=True, batch_size=self.hparams.batch_size)
-
-    # def validation_epoch_end(self, outputs):
+        val_ROUGE = self.compute_ROUGE(batch["id"], pred)
+        self.log("val_ROUGE", val_ROUGE, on_step=False, on_epoch=True, prog_bar=True, batch_size=self.hparams.batch_size)
