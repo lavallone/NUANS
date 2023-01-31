@@ -23,19 +23,19 @@ class MatchSum(pl.LightningModule):
         for param in self.model.parameters():
             param.requires_grad = False
         if self.hparams.fine_tune=="v1":
-            for param in self.model.pooler.parameters():
-                param.requires_grad = True
             unfreeze = [11]
             for i in unfreeze:
                 for param in self.model.encoder.layer[i].parameters():
                     param.requires_grad = True
-        elif self.hparams.fine_tune=="v2":
             for param in self.model.pooler.parameters():
                 param.requires_grad = True
-            unfreeze = [10, 11] # the last two layers of the encoder block
-            for i in unfreeze:
-                for param in self.model.encoder.layer[i].output.parameters():
-                    param.requires_grad = True
+        elif self.hparams.fine_tune=="v2":
+            for param in self.model.encoder.layer[10].output.parameters():
+                param.requires_grad = True
+            for param in self.model.encoder.layer[11].parameters():
+                param.requires_grad = True
+            for param in self.model.pooler.parameters():
+                param.requires_grad = True
         
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(device) # we need the bert-like encoder to be on GPU

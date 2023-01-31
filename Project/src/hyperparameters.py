@@ -11,7 +11,7 @@ class Hparams:
     candidates_path: str = "data/candidates/candidates.json"
     scores_path: str = "data/candidates/scores.json"
     abstractives_path: str = "data/abstractives/abstractives.json"
-    batch_size: int = 2 # size of the batches
+    batch_size: int = 3 # size of the batches
     n_cpu: int = 8  # number of cpu threads to use for the dataloaders
     pin_memory: bool = False # parameter to pin memory in dataloader
     
@@ -25,7 +25,7 @@ class Hparams:
     
     # BERT params
     model: str = "bert" # or "roberta" or "longformer"
-    fine_tune: str = "v1"
+    fine_tune: str = "v2"
     hidden_features: int = 768 # don't know if  I'll use it
     max_length: int = 512
     lr: float = 2e-4 # 2e-4 or 1e-3
@@ -38,3 +38,7 @@ class Hparams:
     
 # BERT --> batch=2, num_candidates=51, max_num_chunks_text=10, max_num_chunks=2, fine_tune=v1!
 # BERT --> batch=2, num_candidates=51, max_num_chunks_text=10, max_num_chunks=2, fine_tune=v2!
+
+# BERT --> batch=4, num_candidates=25, max_num_chunks_text=10, max_num_chunks=2, fine_tune=v1!
+# BERT --> batch=3, num_candidates=25, max_num_chunks_text=10, max_num_chunks=2, fine_tune=v2!
+# BERT --> batch=2, num_candidates=25, max_num_chunks_text=10, max_num_chunks=3, fine_tune=v1!
