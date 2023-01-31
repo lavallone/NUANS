@@ -32,7 +32,7 @@ class MatchSum(pl.LightningModule):
                     param.requires_grad = True
         
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model.to(device)
+        self.model.to(device) # we need the bert-like encoder to be on GPU
         self.rouge = load_metric("rouge")
 
     def compute_chunk_embedding(self, text_embed, num_chunks):
@@ -47,7 +47,7 @@ class MatchSum(pl.LightningModule):
     def bert_forward(self, t):
         num_chunks = t["num_chunks"]
         num_chunks = num_chunks.to("cpu")
-        chunk_t_embed = self.model(t["input_ids"].to(self.model.device), attention_mask = t["attention_mask"].to(self.model.device)).pooler_output
+        chunk_t_embed = self.model(t["input_ids"], attention_mask = t["attention_mask"]).pooler_output
         chunk_t_embed = chunk_t_embed.to("cpu")
         t_embed = self.compute_chunk_embedding(chunk_t_embed, num_chunks)
         del t["input_ids"], t["attention_mask"]
@@ -154,8 +154,7 @@ class MatchSum(pl.LightningModule):
         loss_3 += loss(pos_score, neg_score, ones)
         
         return {"loss": loss_1 + loss_2 + loss_3}
-
-        
+     
     def training_step(self, batch, batch_idx):
         cand_score, gold_score, abstr_score = self(batch) # dovrebbero essere tutti tensori in CPU
         loss = self.loss_function(cand_score, gold_score, abstr_score)
@@ -193,4 +192,4 @@ class MatchSum(pl.LightningModule):
         # good practice to follow with pytorch_lightning for logging values each iteration!
         # https://github.com/Lightning-AI/lightning/issues/4396
         val_ROUGE = self.compute_ROUGE(batch["id"], pred)
-        self.log("val_ROUGE", val_ROUGE, on_step=False, on_epoch=True, prog_bar=True, batch_size=self.hparams.batch_size)
+        self.log("val_ROUGE", val_ROUGE, on_step=True, on_epoch=True, prog_bar=True, batch_size=self.hparams.batch_size)

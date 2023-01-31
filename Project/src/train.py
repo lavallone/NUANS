@@ -11,7 +11,7 @@ def train_model(data, model, experiment_name, patience, metric_to_monitor, mode,
     early_stop_callback = EarlyStopping(
         monitor=metric_to_monitor, mode=mode, min_delta=0.00, patience=patience, verbose=True)
     checkpoint_callback = ModelCheckpoint(
-        save_top_k=1, monitor=metric_to_monitor, mode=mode, dirpath="models",
+        save_top_k=3, monitor=metric_to_monitor, mode=mode, dirpath="models",
         filename=experiment_name +
         "-{epoch:02d}-{val_ROUGE:.4f}", verbose=True)
     # the trainer collect all the useful informations so far for the training

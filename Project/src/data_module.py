@@ -93,13 +93,15 @@ class FairySum_Dataset(Dataset):
             if story not in legal_keys:
                 continue
             text = ' '.join(self.texts[story])
+            candidate_num = len(self.candidates[story][0]) # 101 or 51
             candidates = []
             for c in self.candidates[story]:
                 candidates.append(' '.join([self.texts[story][i] for i in c]))
                 
             assert self.train_or_test=="train" or self.train_or_test=="test"
             if self.train_or_test == "test":
-                scores = [0 for _ in range(51)]
+                # I need to create these empty fields to make the validation samples compatible with the format used by the training ones 
+                scores = [0 for _ in range(candidate_num)]
                 gold = ["","",""]
                 num_gold = 0
                 abstractive = ""

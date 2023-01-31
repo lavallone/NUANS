@@ -35,3 +35,5 @@ class Hparams:
     margin_loss: float = 0.01
     max_num_chunks_text: int = 10
     max_num_chunks: int = 2
+    
+# BERT --> batch=2, num_candidates=51, max_num_chunks_text=10, max_num_chunks=2, only the last layer not freeze!
