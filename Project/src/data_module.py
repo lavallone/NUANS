@@ -8,6 +8,7 @@ import torch
 from src.hyperparameters import Hparams
 from dataclasses import asdict
 import random
+from transformers.utils import logging
 
 def create_chunk_tokens(tokens, cls, sep, max_encoder_length, max_num_chunks, max_num_chunks_text=None):
     if max_num_chunks_text != None: # it means we're chunking the original text
@@ -91,7 +92,7 @@ class FairySum_Dataset(Dataset):
             if story not in legal_keys:
                 continue
             text = ' '.join(self.texts[story])
-            candidate_num = len(self.candidates[story][0]) # 101 or 51
+            candidate_num = len(self.candidates[story][0]) # 101 or 51 or 25
             candidates = []
             for c in self.candidates[story]:
                 candidates.append(' '.join([self.texts[story][i] for i in c]))
@@ -179,6 +180,8 @@ class FairySum_DataModule(pl.LightningDataModule):
             tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
         elif self.hparams.model == "longformer":
             tokenizer = LongformerTokenizer.from_pretrained("allenai/longformer-base-4096")
+        logging.set_verbosity(40) # to avoid the warnings about the token lengths!
+        
         batch_out["text"] = create_chunk_tokens( tokenizer([sample["text"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.cls, self.hparams.sep, self.hparams.max_length, self.hparams.max_num_chunks, self.hparams.max_num_chunks_text )
         candidates_num = len(batch[0]["candidates"])
         batch_out["candidates"] = [ create_chunk_tokens( tokenizer([sample["candidates"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.cls, self.hparams.sep, self.hparams.max_length, self.hparams.max_num_chunks ) for i in range(candidates_num) ]
