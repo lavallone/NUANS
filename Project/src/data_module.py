@@ -5,13 +5,11 @@ import json
 from transformers import BertTokenizer, RobertaTokenizer, LongformerTokenizer
 from collections import Counter
 import torch
-from functools import partial
 from src.hyperparameters import Hparams
 from dataclasses import asdict
-from tqdm import tqdm
 import random
 
-def create_chunk_tokens(tokens, max_encoder_length, max_num_chunks, max_num_chunks_text=None):
+def create_chunk_tokens(tokens, cls, sep, max_encoder_length, max_num_chunks, max_num_chunks_text=None):
     if max_num_chunks_text != None: # it means we're chunking the original text
         max_num_chunks = max_num_chunks_text
     
@@ -28,7 +26,7 @@ def create_chunk_tokens(tokens, max_encoder_length, max_num_chunks, max_num_chun
         input_ids_list.append(torch.masked_select(input_ids[i], mask[i]))
         attention_mask_list.append(torch.masked_select(attention_mask[i], mask[i]))
 
-    # To be more efficient, I need to implement the possibility of  working with tokens length that are
+    # To be more efficient, I need to implement the possibility of working with tokens length that are
     # less than the maximum allowed (512 for Bert and Roberta and 4096 for LongFormer)
     max_batch_length = 0
     max_length = torch.tensor([len(e) for e in input_ids_list]).max()
@@ -50,7 +48,7 @@ def create_chunk_tokens(tokens, max_encoder_length, max_num_chunks, max_num_chun
         
         num_chunks_list.append(num_chunks) # in this way in the forward function we know which embedding chunks belong to which text
         for i in range(len(ids_chunks)): # for each created chunk (without considering yet the max number of chunks we set)
-            ids_chunks[i] = torch.cat([torch.tensor([101]), ids_chunks[i], torch.tensor([102])])
+            ids_chunks[i] = torch.cat([torch.tensor([cls]), ids_chunks[i], torch.tensor([sep])])
             attn_chunks[i] = torch.cat([torch.tensor([1]), attn_chunks[i], torch.tensor([1])])
             
             pad_len = (max_batch_length + 2) - len(ids_chunks[i])
@@ -58,7 +56,7 @@ def create_chunk_tokens(tokens, max_encoder_length, max_num_chunks, max_num_chun
                 ids_chunks[i] = torch.cat([ids_chunks[i], torch.tensor([0] * pad_len)])
                 attn_chunks[i] = torch.cat([attn_chunks[i], torch.tensor([0] * pad_len)])
         
-        # we select 'num_chunks' randomly 
+        # we select 'num_chunks' randomly
         rnd_idx = sorted(random.sample(range(len(ids_chunks)), num_chunks))
         ids_stack += [ids_chunks[i] for i in rnd_idx]
         attn_stack += [attn_chunks[i] for i in rnd_idx]
@@ -181,11 +179,11 @@ class FairySum_DataModule(pl.LightningDataModule):
             tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
         elif self.hparams.model == "longformer":
             tokenizer = LongformerTokenizer.from_pretrained("allenai/longformer-base-4096")
-        batch_out["text"] = create_chunk_tokens( tokenizer([sample["text"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks, self.hparams.max_num_chunks_text )
+        batch_out["text"] = create_chunk_tokens( tokenizer([sample["text"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.cls, self.hparams.sep, self.hparams.max_length, self.hparams.max_num_chunks, self.hparams.max_num_chunks_text )
         candidates_num = len(batch[0]["candidates"])
-        batch_out["candidates"] = [ create_chunk_tokens( tokenizer([sample["candidates"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks ) for i in range(candidates_num) ]
+        batch_out["candidates"] = [ create_chunk_tokens( tokenizer([sample["candidates"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.cls, self.hparams.sep, self.hparams.max_length, self.hparams.max_num_chunks ) for i in range(candidates_num) ]
         batch_out["scores"] = torch.as_tensor([sample["scores"] for sample in batch])
-        batch_out["gold"] = [ create_chunk_tokens( tokenizer([sample["gold"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks ) for i in range(3) ] # the gold summaries can be maximum 3!
+        batch_out["gold"] = [ create_chunk_tokens( tokenizer([sample["gold"][i] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.cls, self.hparams.sep, self.hparams.max_length, self.hparams.max_num_chunks ) for i in range(3) ] # the gold summaries can be maximum 3!
         batch_out["num_gold"] = [sample["num_gold"] for sample in batch]
-        batch_out["abstractive"] = create_chunk_tokens( tokenizer([sample["abstractive"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.max_length, self.hparams.max_num_chunks )
+        batch_out["abstractive"] = create_chunk_tokens( tokenizer([sample["abstractive"] for sample in batch], add_special_tokens=False, padding=True, return_tensors="pt"), self.hparams.cls, self.hparams.sep, self.hparams.max_length, self.hparams.max_num_chunks )
         return batch_out

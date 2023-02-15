@@ -128,6 +128,11 @@ class MatchSum(pl.LightningModule):
         }
 
     def loss_function(self, candidates_scores, gold_score, abstractive_score):
+        # ######################################################################################
+        # the logic behind this loss and the hyperparameters chosen are completely taken from  #
+        # https://github.com/maszhongming/MatchSum                                             #
+        ########################################################################################
+        
         # the total loss is based on three MarginRanking losses
         #-------------------- candidates/candidates loss -----------------------#
         loss_1 = 0
@@ -137,7 +142,7 @@ class MatchSum(pl.LightningModule):
             pos_score = pos_score.contiguous().view(-1)
             neg_score = neg_score.contiguous().view(-1)
             ones = torch.ones(pos_score.size())
-            loss = torch.nn.MarginRankingLoss(self.hparams.margin_loss * i)
+            loss = torch.nn.MarginRankingLoss(0.01 * i)
             loss_1 += loss(pos_score, neg_score, ones)
 
         #-------------------- candidates/gold loss -----------------------#
