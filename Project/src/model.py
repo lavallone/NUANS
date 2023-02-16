@@ -1,12 +1,11 @@
 import torch
 from torch import optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-import numpy as np
 import pytorch_lightning as pl
 from .data_module import FairySum_DataModule
 from transformers import BertModel, RobertaModel, LongformerModel
-from datasets import load_metric
 from tqdm import tqdm
+import evaluate
 
 
 class MatchSum(pl.LightningModule):
@@ -39,7 +38,7 @@ class MatchSum(pl.LightningModule):
         
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(device) # we need the bert-like encoder to be on GPU
-        self.rouge = load_metric("rouge")
+        self.rouge = evaluate.load('rouge')
 
     def compute_chunk_embedding(self, text_embed, num_chunks):
         init_index = 0
@@ -193,7 +192,7 @@ class MatchSum(pl.LightningModule):
             for g in gold_list:
                 gold_summary = ' '.join([FairySum_DataModule.texts[story][i] for i in g])
                 results = self.rouge.compute(predictions=[best_candidate], references=[gold_summary])
-                story_score += ((results["rougeL"].low.fmeasure+results["rougeL"].mid.fmeasure+results["rougeL"].high.fmeasure)/3)
+                story_score += results["rougeL"]
             story_score /= num_gold
             rouge_score_list.append(story_score)
         return torch.tensor(rouge_score_list).mean()
@@ -203,4 +202,4 @@ class MatchSum(pl.LightningModule):
         # good practice to follow with pytorch_lightning for logging values each iteration!
         # https://github.com/Lightning-AI/lightning/issues/4396
         val_ROUGE = self.compute_ROUGE(batch["id"], pred)
-        self.log("val_ROUGE", val_ROUGE, on_step=True, on_epoch=True, prog_bar=True, batch_size=self.hparams.batch_size)
+        self.log("val_ROUGE", val_ROUGE, on_step=False, on_epoch=True, prog_bar=True, batch_size=self.hparams.batch_size)

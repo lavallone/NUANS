@@ -102,10 +102,7 @@ class SentenceBERT(pl.LightningModule):
                 # we use the output length predictions made by the trained regression model
                 summary_length = self.predictions[name] + self.hparams.length_conf_int
             elif self.hparams.sbert_mode == "evaluation":
-                if len(text) >= 150:
-                    summary_length = int(len(text)*0.3) # 30% of the original document length
-                else:
-                    summary_length = int(len(text)*0.6) # 60% of the original document length
+                summary_length = int(len(text)*0.3)
 
             # compute the sentence embeddings
             embeddings = self.model.encode(text, convert_to_tensor=True)

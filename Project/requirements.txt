@@ -12,3 +12,5 @@ booknlp
 rouge_score
 wandb
 seaborn
+datasets
+evaluate
