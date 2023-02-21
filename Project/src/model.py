@@ -19,8 +19,10 @@ class MatchSum(pl.LightningModule):
         elif self.hparams.model == "longformer":
             self.model = LongformerModel.from_pretrained("allenai/longformer-base-4096")
         
+        # we set all parameters to be not trainable
         for param in self.model.parameters():
             param.requires_grad = False
+        # here we decide which fine-tuning strategy use --> which parameters do we unfreeze?
         if self.hparams.fine_tune=="v1":
             unfreeze = [11]
             for i in unfreeze:
@@ -38,8 +40,10 @@ class MatchSum(pl.LightningModule):
         
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(device) # we need the bert-like encoder to be on GPU
-        self.rouge = evaluate.load('rouge')
+        self.rouge = evaluate.load('rouge') # the evaluation metric
 
+    # since the tokens are organized in chunks, I need an aggregration method (mean() in this case) which
+    # combine their embeddings together
     def compute_chunk_embedding(self, text_embed, num_chunks):
         init_index = 0
         new_text_embed = []
@@ -49,6 +53,7 @@ class MatchSum(pl.LightningModule):
             init_index += i
         return torch.stack(new_text_embed)
     
+    # in this way I can manage more easily the main forward function
     def bert_forward(self, t):
         num_chunks = t["num_chunks"]
         num_chunks = num_chunks.to("cpu")
@@ -85,6 +90,7 @@ class MatchSum(pl.LightningModule):
             candidates_scores_list.append(torch.cosine_similarity(sorted_cand_embed_stack, new_text_embed, dim=-1))
         candidates_scores = torch.stack(candidates_scores_list)
         
+        # if we are in inference phase, we only need the candidates scores!
         if not self.training: # eval mode
             return candidates_scores
         
@@ -199,7 +205,5 @@ class MatchSum(pl.LightningModule):
  
     def validation_step(self, batch, batch_idx):
         pred = self.predict(batch) # it returns the list of the best summaries for each story
-        # good practice to follow with pytorch_lightning for logging values each iteration!
-        # https://github.com/Lightning-AI/lightning/issues/4396
         val_ROUGE = self.compute_ROUGE(batch["id"], pred)
         self.log("val_ROUGE", val_ROUGE, on_step=False, on_epoch=True, prog_bar=True, batch_size=self.hparams.batch_size)

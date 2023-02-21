@@ -10,6 +10,7 @@ from dataclasses import asdict
 import random
 from transformers.utils import logging
 
+# function to "chunk-ize" each tokenized text in order to make it digestible for the encoder
 def create_chunk_tokens(tokens, cls, sep, max_encoder_length, max_num_chunks, max_num_chunks_text=None):
     if max_num_chunks_text != None: # it means we're chunking the original text
         max_num_chunks = max_num_chunks_text

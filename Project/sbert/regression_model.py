@@ -20,7 +20,7 @@ def execute_booknlp_pipeline(booknlp, texts):
         shutil.copy("data/current/current.tokens", "data/booknlp_processed_texts")
         os.rename("data/booknlp_processed_texts/current.tokens", "data/booknlp_processed_texts/"+k+".tokens")
 
-# compute "events concentration" for each story
+# compute "events concentration" for each story (it's the second quantity used for predicting the output summary length)
 def count_event_sentence(tokens_path_dir, texts):
     events = {}
     for k,_ in texts.items():

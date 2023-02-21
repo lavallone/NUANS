@@ -2,18 +2,13 @@ import numpy as np
 from scipy.sparse.csgraph import connected_components
 from scipy.special import softmax
 import logging
-import torch
-from torch import nn
 import pytorch_lightning as pl
 from sentence_transformers import SentenceTransformer, util
-from .regression_model import LengthRegressionModel
 
 """
 LexRank implementation
 Source: https://github.com/crabcamp/lexrank/tree/dev
 """
-
-logger = logging.getLogger(__name__)
 
 # AUX FUNCTIONS
 #################################################################################################################
@@ -29,6 +24,7 @@ def _power_method(transition_matrix, increase_power=True, max_iter=10000):
         eigenvector = eigenvector_next
         if increase_power:
             transition = np.dot(transition, transition)
+    logger = logging.getLogger(__name__)
     logger.warning("Maximum number of iterations for power method exceeded without convergence!")
     return eigenvector_next
 
@@ -64,7 +60,6 @@ def create_markov_matrix(weights_matrix):
         return softmax(weights_matrix, axis=1)
     return weights_matrix / row_sum
 
-
 def create_markov_matrix_discrete(weights_matrix, threshold):
     discrete_weights_matrix = np.zeros(weights_matrix.shape)
     ixs = np.where(weights_matrix >= threshold)
@@ -83,6 +78,7 @@ def degree_centrality_scores(similarity_matrix, threshold=None, increase_power=T
     return scores
 
 
+# this is the BASELINE model used both for performance comparison and for the extraction of summary candidates
 class SentenceBERT(pl.LightningModule):
     def __init__(self, hparams, predictions = None):
         super(SentenceBERT, self).__init__()

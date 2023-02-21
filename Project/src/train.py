@@ -20,8 +20,6 @@ def train_model(data, model, experiment_name, patience, metric_to_monitor, mode,
         logger=logger, max_epochs=epochs, log_every_n_steps=1, gpus=n_gpus,
         callbacks=[early_stop_callback, checkpoint_callback],
         num_sanity_val_steps=0,
-        # auto_lr_find = True,
-        # auto_scale_batch_size=True,
         )
     trainer.fit(model, data)
     return trainer
